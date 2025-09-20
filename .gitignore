@@ -1,0 +1,5 @@
+# Ignore all .toml files in .streamlit directory
+.streamlit/*.toml
+
+# Or ignore the entire .streamlit directory (not recommended if it contains other needed files)
+.streamlit/
