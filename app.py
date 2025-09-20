@@ -13,7 +13,7 @@ class DiabetesNet(nn.Module):
         self.fc1 = nn.Linear(input_dim, 128)
         self.fc2 = nn.Linear(128, 64)
         self.fc3 = nn.Linear(64, 32)
-        self.fc4 = nn.Linear(32, 16)   # ← missing before
+        self.fc4 = nn.Linear(32, 16)   # extra layer
         self.out = nn.Linear(16, 2)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.3)
@@ -25,10 +25,9 @@ class DiabetesNet(nn.Module):
         x = self.dropout(x)
         x = self.relu(self.fc3(x))
         x = self.dropout(x)
-        x = self.relu(self.fc4(x))     # ← add this forward pass
+        x = self.relu(self.fc4(x))
         x = self.out(x)
         return x
-
 
 # Load trained model
 model = DiabetesNet(input_dim=21)
@@ -60,6 +59,7 @@ with col1:
     st.subheader("🏥 Medical History")
     HighBP = st.radio("High Blood Pressure?", [0, 1])
     HighChol = st.radio("High Cholesterol?", [0, 1])
+    CholCheck = st.radio("Had cholesterol check in last 5 years?", [0, 1])  # ✅ added
     Stroke = st.radio("History of Stroke?", [0, 1])
     HeartDisease = st.radio("History of Heart Disease?", [0, 1])
     DiffWalk = st.radio("Difficulty Walking/Climbing Stairs?", [0, 1])
@@ -97,7 +97,6 @@ with col6:
 # -----------------------------
 # Preprocessing
 # -----------------------------
-# Normalize BMI, PhysHlth, MentHlth (same as training)
 def normalize(value, min_val, max_val):
     return (value - min_val) / (max_val - min_val) if max_val > min_val else 0
 
@@ -105,9 +104,9 @@ BMI = normalize(BMI, 10, 50)
 PhysHlth = normalize(PhysHlth, 0, 30)
 MentHlth = normalize(MentHlth, 0, 30)
 
-# Arrange inputs into same order as training
+# ✅ Now we have all 21 features
 features = [
-    HighBP, HighChol, BMI, Smoker, Stroke, HeartDisease, PhysActivity,
+    HighBP, HighChol, CholCheck, BMI, Smoker, Stroke, HeartDisease, PhysActivity,
     Fruits, Veggies, HvyAlcoholConsump, AnyHealthcare, NoDocbcCost,
     GenHlth, MentHlth, PhysHlth, DiffWalk, Sex, Age, Education, Income
 ]
@@ -125,7 +124,6 @@ if st.button("🔮 Predict Risk"):
 
     st.success(f"**Predicted Diabetes Risk: {risk:.2%}**")
 
-    # Risk interpretation
     if risk < 0.25:
         st.info("🟢 Low Risk – Maintain your healthy lifestyle!")
     elif risk < 0.6:
@@ -133,7 +131,6 @@ if st.button("🔮 Predict Risk"):
     else:
         st.error("🔴 High Risk – Please consult a healthcare professional.")
 
-    # Show probability breakdown
     st.progress(risk)
     st.write("**Probability Breakdown:**")
     st.write(f"- No Diabetes: {(1-risk):.2%}")
