@@ -60,13 +60,10 @@ st.set_page_config(
 # Sidebar navigation
 with st.sidebar:
     st.title("HealthGuard AI")
-    page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant"])
-
     st.markdown("---")
-    st.markdown("### Quick Stats")
-    st.metric("Total Patients", "342")
-    st.metric("High Risk Patients", "27")
-    st.metric("Avg HbA1c", "6.8%")
+    page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant"])
+    
+    # Removed the Quick Stats section as requested
 
 # -----------------------------
 # Normalization Helper
@@ -111,9 +108,9 @@ income_categories = {
     2: "$10,000 to $15,000",
     3: "$15,000 to $20,000",
     4: "$20,000 to $25,000",
-    5: "$25,000 to $35,000",
-    6: "$35,000 to $50,000",
-    7: "$50,000 to $75,000",
+    5: "$25-35,000",
+    6: "$35-50,000",
+    7: "$50-75,000",
     8: "$75,000 or more"
 }
 
