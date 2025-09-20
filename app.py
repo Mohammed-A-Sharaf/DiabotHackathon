@@ -35,17 +35,27 @@ st.markdown("""
 # Define Model
 # ------------------------------
 class DiabetesModel(nn.Module):
-    def __init__(self, input_size=8, hidden_size=64, output_size=1):
+    def __init__(self, input_dim=21):
         super(DiabetesModel, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.fc1 = nn.Linear(input_dim, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 32)
+        self.fc4 = nn.Linear(32, 16)
+        self.out = nn.Linear(16, 2)
         self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size, output_size)
-        self.sigmoid = nn.Sigmoid()
+        self.dropout = nn.Dropout(0.3)
 
     def forward(self, x):
         x = self.relu(self.fc1(x))
-        x = self.sigmoid(self.fc2(x))
+        x = self.dropout(x)
+        x = self.relu(self.fc2(x))
+        x = self.dropout(x)
+        x = self.relu(self.fc3(x))
+        x = self.dropout(x)
+        x = self.relu(self.fc4(x))
+        x = self.out(x)
         return x
+
 
 # Load model
 model = DiabetesModel()
