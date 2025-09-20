@@ -86,6 +86,35 @@ def normalize_feature(value, feature_name):
 def yes_no_to_binary(value):
     return 1 if value == "Yes" else 0
 
+# Age category mapping
+age_categories = {
+    1: "18-24 years",
+    2: "25-29 years",
+    3: "30-34 years",
+    4: "35-39 years",
+    5: "40-44 years",
+    6: "45-49 years",
+    7: "50-54 years",
+    8: "55-59 years",
+    9: "60-64 years",
+    10: "65-69 years",
+    11: "70-74 years",
+    12: "75-79 years",
+    13: "80+ years"
+}
+
+# Income category mapping
+income_categories = {
+    1: "Less than $10,000",
+    2: "$10,000 to $15,000",
+    3: "$15,000 to $20,000",
+    4: "$20,000 to $25,000",
+    5: "$25,000 to $35,000",
+    6: "$35,000 to $50,000",
+    7: "$50,000 to $75,000",
+    8: "$75,000 or more"
+}
+
 # -----------------------------
 # Health Analysis Page
 # -----------------------------
@@ -136,20 +165,22 @@ if page == "Health Analysis":
     with col3:
         Sex = 1 if gender == "Male" else 0
         
-        # Age category with tooltip
-        Age = st.slider(
-            "Age category", 
-            1, 13, 5,
-            help="1=18-24, 2=25-29, 3=30-34, 4=35-39, 5=40-44, 6=45-49, 7=50-54, 8=55-59, 9=60-64, 10=65-69, 11=70-74, 12=75-79, 13=80+"
+        # Age category with clear options
+        Age = st.selectbox(
+            "Age Category",
+            options=list(age_categories.keys()),
+            format_func=lambda x: f"{x} - {age_categories[x]}",
+            index=4  # Default to 40-44 years
         )
         
         Education = st.slider("Education (1=Never attended, 6=College graduate)", 1, 6, 4)
         
-        # Income with tooltip
-        Income = st.slider(
-            "Income", 
-            1, 8, 4,
-            help="1=<$10k, 2=$10k-15k, 3=$15k-20k, 4=$20k-25k, 5=$25k-35k, 6=$35k-50k, 7=$50k-75k, 8=$75k+"
+        # Income with clear options
+        Income = st.selectbox(
+            "Income Category",
+            options=list(income_categories.keys()),
+            format_func=lambda x: f"{x} - {income_categories[x]}",
+            index=3  # Default to $20,000 to $25,000
         )
         
         NoDocbcCost = st.radio("Skipped doctor due to cost?", ["No", "Yes"])
