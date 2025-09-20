@@ -1,8 +1,6 @@
 import streamlit as st
 import torch
 import torch.nn as nn
-import pandas as pd
-import numpy as np
 
 # -----------------------------
 # Model Definition
@@ -40,7 +38,7 @@ def load_model():
         model.load_state_dict(torch.load("Diabetes_model.pth", map_location="cpu"))
         model.eval()
     except Exception as e:
-        st.error(f"⚠️ Error loading model: {e}")
+        st.error(f"Error loading model: {e}")
     return model
 
 model = load_model()
@@ -57,7 +55,7 @@ st.set_page_config(
 
 # Sidebar navigation
 with st.sidebar:
-    st.title("HealthGuard AI 🏥")
+    st.title("HealthGuard AI")
     page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant"])
 
     st.markdown("---")
@@ -65,6 +63,7 @@ with st.sidebar:
     st.metric("Total Patients", "342")
     st.metric("High Risk Patients", "27")
     st.metric("Avg HbA1c", "6.8%")
+
 
 # -----------------------------
 # Normalization Helper
@@ -77,26 +76,28 @@ def normalize(value, min_val, max_val):
 # Health Analysis Page
 # -----------------------------
 if page == "Health Analysis":
-    st.markdown("## 🩺 Patient Health Analysis & Risk Prediction")
+    st.markdown("## Patient Health Analysis & Risk Prediction")
 
-    # Patient info (this should eventually be pulled from DB)
+    # Patient info (entered manually)
+    st.subheader("Patient Information")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown("**Patient:** John Doe")
-        st.markdown("**Age:** 52 years")
-        st.markdown("**Gender:** Male")
+        patient_name = st.text_input("Patient Name", "John Doe")
+        age = st.number_input("Age", min_value=1, max_value=120, value=52)
+        gender = st.radio("Gender", ["Male", "Female"])
     with col2:
-        st.markdown("**Height:** 175 cm")
-        st.markdown("**Weight:** 82 kg")
-        st.markdown("**BMI:** 26.8")
+        height = st.number_input("Height (cm)", min_value=50, max_value=250, value=175)
+        weight = st.number_input("Weight (kg)", min_value=10, max_value=300, value=82)
+        bmi = round(weight / ((height / 100) ** 2), 1)
+        st.write(f"**BMI:** {bmi}")
     with col3:
-        st.markdown("**Last Checkup:** 15 days ago")
-        st.markdown("**Next Appointment:** In 2 weeks")
-        st.markdown("**Status:** Pre-Diabetic")
+        last_checkup = st.date_input("Last Checkup")
+        next_appointment = st.date_input("Next Appointment")
+        status = st.selectbox("Health Status", ["Healthy", "Pre-Diabetic", "Diabetic"])
 
     st.markdown("---")
 
-    st.subheader("📋 Input Health Information")
+    st.subheader("Input Health Information")
 
     col1, col2, col3 = st.columns(3)
 
@@ -119,7 +120,7 @@ if page == "Health Analysis":
 
     # Demographics
     with col3:
-        Sex = st.radio("Sex (0=Female, 1=Male)", [0, 1])
+        Sex = 1 if gender == "Male" else 0
         Age = st.slider("Age category (1=18-24, 13=80+)", 1, 13, 5)
         Education = st.slider("Education (1=Never attended, 6=College graduate)", 1, 6, 4)
         Income = st.slider("Income (1=<$10k, 8=$75k+)", 1, 8, 4)
@@ -127,20 +128,18 @@ if page == "Health Analysis":
         AnyHealthcare = st.radio("Healthcare Coverage?", [0, 1])
 
     # BMI, Physical & Mental Health
-    st.subheader("📊 Health Metrics")
+    st.subheader("Health Metrics")
     col4, col5, col6 = st.columns(3)
     with col4:
-        BMI = st.slider("BMI (0–100)", 10, 50, 25)
+        BMI = normalize(bmi, 10, 50)
     with col5:
         PhysHlth = st.slider("Physical Health (days unwell past 30)", 0, 30, 5)
+        PhysHlth = normalize(PhysHlth, 0, 30)
     with col6:
         MentHlth = st.slider("Mental Health (days unwell past 30)", 0, 30, 5)
+        MentHlth = normalize(MentHlth, 0, 30)
 
     # Preprocess inputs
-    BMI = normalize(BMI, 10, 50)
-    PhysHlth = normalize(PhysHlth, 0, 30)
-    MentHlth = normalize(MentHlth, 0, 30)
-
     features = [
         HighBP, HighChol, BMI, Smoker, Stroke, HeartDisease, PhysActivity,
         Fruits, Veggies, HvyAlcoholConsump, AnyHealthcare, NoDocbcCost,
@@ -149,21 +148,21 @@ if page == "Health Analysis":
     X = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
 
     # Prediction
-    if st.button("🔮 Predict Risk"):
+    if st.button("Predict Risk"):
         with torch.no_grad():
             outputs = model(X)
             probabilities = torch.softmax(outputs, dim=1)
             risk = probabilities[0][1].item()
 
-        st.success(f"**Predicted Diabetes Risk: {risk:.2%}**")
+        st.success(f"Predicted Diabetes Risk: {risk:.2%}")
 
         # Risk interpretation
         if risk < 0.25:
-            st.info("🟢 Low Risk – Maintain your healthy lifestyle!")
+            st.info("Low Risk – Maintain your healthy lifestyle.")
         elif risk < 0.6:
-            st.warning("🟠 Moderate Risk – Consider lifestyle improvements.")
+            st.warning("Moderate Risk – Consider lifestyle improvements.")
         else:
-            st.error("🔴 High Risk – Please consult a healthcare professional.")
+            st.error("High Risk – Please consult a healthcare professional.")
 
         # Probability breakdown
         st.progress(risk)
@@ -176,33 +175,5 @@ if page == "Health Analysis":
 # AI Health Assistant Page
 # -----------------------------
 elif page == "AI Health Assistant":
-    st.markdown("## 🤖 AI Health Assistant")
-
-    # Initialize chat history
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    # Display chat messages
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # User input
-    if prompt := st.chat_input("Ask me anything about your health..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        # Simple rule-based assistant (can be replaced with real AI backend)
-        if "blood sugar" in prompt.lower():
-            response = "Your blood sugar trends suggest careful monitoring. Try to maintain a balanced diet and regular exercise."
-        elif "diet" in prompt.lower():
-            response = "Include more fiber, lean proteins, and avoid excess sugar. Would you like a sample meal plan?"
-        elif "exercise" in prompt.lower():
-            response = "Daily 30-minute walks or moderate physical activity can significantly reduce diabetes risk."
-        else:
-            response = "I can provide insights about your blood sugar, diet, exercise, or medication. What would you like to focus on?"
-
-        with st.chat_message("assistant"):
-            st.markdown(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+    st.markdown("## AI Health Assistant")
+    st.write("This page will provide personalized AI-driven health advice and insights.")
