@@ -283,15 +283,111 @@ if page == "Health Analysis":
 
 
 # -----------------------------
-# AI Health Assistant Page
+# AI Health Assistant Page with AWS Bedrock Chatbot
 # -----------------------------
 elif page == "AI Health Assistant":
-    st.markdown("## AI Health Assistant")
+    st.markdown("## AI Health Assistant Chatbot")
     
-    st.info("This assistant provides personalized health recommendations based on your risk factors.")
+    st.info("Chat with our AI health assistant for personalized diabetes prevention and management advice.")
     
-    # Simple risk assessment
+    # Initialize the Bedrock client
+    @st.cache_resource
+    def get_bedrock_client():
+        try:
+            import boto3
+            client = boto3.client(
+                service_name='bedrock-runtime',
+                region_name='us-east-1'  # Use your preferred region
+            )
+            return client
+        except Exception as e:
+            st.error(f"Error initializing AWS Bedrock client: {e}")
+            return None
+    
+    # Initialize session state for chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. How can I help you today?"}
+        ]
+    
+    # Display chat messages from history
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+    
+    # Function to invoke Bedrock with Llama 3
+    def invoke_llama(prompt, max_tokens=500, temperature=0.5):
+        try:
+            bedrock_client = get_bedrock_client()
+            if bedrock_client is None:
+                return "Error connecting to AI service. Please try again later."
+            
+            # Format the prompt for Llama 3 :cite[4]:cite[7]
+            formatted_prompt = f"""
+<|begin_of_text|><|start_header_id|>user<|end_header_id|>
+{prompt}
+<|eot_id|>
+<|start_header_id|>assistant<|end_header_id|>
+"""
+            
+            # Prepare the request body for Llama 3
+            body = json.dumps({
+                "prompt": formatted_prompt,
+                "max_gen_len": max_tokens,
+                "temperature": temperature,
+                "top_p": 0.9
+            })
+            
+            # Send the request to the Bedrock model
+            response = bedrock_client.invoke_model(
+                modelId='meta.llama3-8b-instruct-v1:0',  # Using Llama 3 Instruct
+                body=body,
+                contentType='application/json',
+                accept='application/json'
+            )
+            
+            # Parse the response
+            response_body = json.loads(response['body'].read())
+            return response_body.get('generation', 'No response generated')
+            
+        except Exception as e:
+            return f"Error: {str(e)}"
+    
+    # Chat input
+    if prompt := st.chat_input("Ask about diabetes prevention, nutrition, or exercise..."):
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        
+        # Display user message
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        
+        # Get AI response
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                # Create a context-aware prompt for the health assistant
+                health_context = f"""
+You are a friendly and knowledgeable health assistant specializing in diabetes prevention and management.
+Provide helpful, evidence-based advice about nutrition, exercise, and lifestyle changes.
+Always remind users to consult healthcare professionals for medical advice.
+
+Current conversation context: {st.session_state.messages[-3:] if len(st.session_state.messages) > 3 else 'New conversation'}
+
+User question: {prompt}
+
+Please provide a helpful, concise response focused on diabetes prevention and management.
+"""
+                
+                full_response = invoke_llama(health_context)
+                st.markdown(full_response)
+        
+        # Add assistant response to chat history
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
+    
+    # Additional health assessment tools
+    st.markdown("---")
     st.subheader("Quick Health Assessment")
+    
     col1, col2 = st.columns(2)
     
     with col1:
@@ -302,28 +398,24 @@ elif page == "AI Health Assistant":
     with col2:
         sleep_hours = st.slider("Average hours of sleep per night", 3, 12, 7)
         stress_level = st.slider("Stress level (1=Low, 10=High)", 1, 10, 5)
+    
+    if st.button("Generate Personalized Health Report", type="primary"):
+        # Create a comprehensive health assessment prompt
+        assessment_prompt = f"""
+Create a personalized health report based on these factors:
+- Family history of diabetes: {family_history}
+- Physical activity level: {activity_level}
+- Diet quality: {diet_quality}
+- Sleep hours per night: {sleep_hours}
+- Stress level: {stress_level}/10
+
+Please provide:
+1. Diabetes risk assessment
+2. 3 specific lifestyle recommendations
+3. Encouraging closing remarks
+"""
         
-    if st.button("Get Health Recommendations", type="primary"):
-        recommendations = []
-        
-        if activity_level == "Sedentary":
-            recommendations.append("🏃‍♂️ **Increase physical activity:** Aim for at least 30 minutes of moderate exercise most days.")
-        
-        if diet_quality in ["Poor", "Average"]:
-            recommendations.append("🥗 **Improve diet:** Focus on whole foods, fruits, vegetables, and limit processed foods.")
-            
-        if sleep_hours < 7:
-            recommendations.append("😴 **Prioritize sleep:** Aim for 7-9 hours of quality sleep per night.")
-            
-        if stress_level > 7:
-            recommendations.append("🧘‍♂️ **Manage stress:** Try meditation, deep breathing, or other relaxation techniques.")
-            
-        if family_history == "Yes":
-            recommendations.append("👨‍👩‍👧‍👦 **Family history:** Be extra vigilant about regular check-ups due to your family history.")
-            
-        if recommendations:
-            st.success("### Personalized Recommendations")
-            for rec in recommendations:
-                st.write(rec)
-        else:
-            st.info("You're doing great! Keep up your healthy habits.")
+        with st.spinner("Generating your personalized health report..."):
+            report = invoke_llama(assessment_prompt, max_tokens=600)
+            st.success("### Your Personalized Health Report")
+            st.markdown(report)
