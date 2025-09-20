@@ -70,9 +70,8 @@ with st.sidebar:
 # Normalization Helper (Updated to match training preprocessing)
 # -----------------------------
 # These min/max values should match what was used during training
-# If you have the exact values from your dataset, replace these
 NORMALIZATION_PARAMS = {
-    "BMI": {"min": 12.0, "max": 98.0},  # Example values - replace with actuals from your dataset
+    "BMI": {"min": 12.0, "max": 98.0},  # Replace with actual values from your dataset
     "PhysHlth": {"min": 0.0, "max": 30.0},
     "MentHlth": {"min": 0.0, "max": 30.0}
 }
@@ -84,6 +83,10 @@ def normalize_feature(value, feature_name):
         max_val = NORMALIZATION_PARAMS[feature_name]["max"]
         return (value - min_val) / (max_val - min_val) if max_val > min_val else 0
     return value
+
+# Helper function to convert Yes/No to 1/0
+def yes_no_to_binary(value):
+    return 1 if value == "Yes" else 0
 
 # -----------------------------
 # Health Analysis Page
@@ -114,35 +117,35 @@ if page == "Health Analysis":
 
     col1, col2, col3 = st.columns(3)
 
-    # Medical History - Matching BRFSS2015 dataset
+    # Medical History - Updated to show Yes/No but convert to 1/0
     with col1:
-        HighBP = st.radio("High Blood Pressure?", [0, 1], help="0 = no, 1 = yes")
-        HighChol = st.radio("High Cholesterol?", [0, 1], help="0 = no, 1 = yes")
-        CholCheck = st.radio("Cholesterol Check in last 5 years?", [0, 1], help="0 = no, 1 = yes")
-        Stroke = st.radio("History of Stroke?", [0, 1], help="0 = no, 1 = yes")
-        HeartDiseaseorAttack = st.radio("History of Heart Disease or Attack?", [0, 1], help="0 = no, 1 = yes")
+        HighBP = st.radio("High Blood Pressure?", ["No", "Yes"], help="0 = no, 1 = yes")
+        HighChol = st.radio("High Cholesterol?", ["No", "Yes"], help="0 = no, 1 = yes")
+        CholCheck = st.radio("Cholesterol Check in last 5 years?", ["No", "Yes"], help="0 = no, 1 = yes")
+        Stroke = st.radio("History of Stroke?", ["No", "Yes"], help="0 = no, 1 = yes")
+        HeartDiseaseorAttack = st.radio("History of Heart Disease or Attack?", ["No", "Yes"], help="0 = no, 1 = yes")
 
-    # Lifestyle - Matching BRFSS2015 dataset
+    # Lifestyle - Updated to show Yes/No but convert to 1/0
     with col2:
-        Smoker = st.radio("Smoked 100+ cigarettes?", [0, 1], help="0 = no, 1 = yes")
-        PhysActivity = st.radio("Physical Activity past 30 days?", [0, 1], help="0 = no, 1 = yes")
-        Fruits = st.radio("Eat Fruits daily?", [0, 1], help="0 = no, 1 = yes")
-        Veggies = st.radio("Eat Vegetables daily?", [0, 1], help="0 = no, 1 = yes")
-        HvyAlcoholConsump = st.radio("Heavy Alcohol Consumption?", [0, 1], 
+        Smoker = st.radio("Smoked 100+ cigarettes?", ["No", "Yes"], help="0 = no, 1 = yes")
+        PhysActivity = st.radio("Physical Activity past 30 days?", ["No", "Yes"], help="0 = no, 1 = yes")
+        Fruits = st.radio("Eat Fruits daily?", ["No", "Yes"], help="0 = no, 1 = yes")
+        Veggies = st.radio("Eat Vegetables daily?", ["No", "Yes"], help="0 = no, 1 = yes")
+        HvyAlcoholConsump = st.radio("Heavy Alcohol Consumption?", ["No", "Yes"], 
                                     help="Heavy drinkers (adult men having more than 14 drinks per week and adult women having more than 7 drinks per week)")
         GenHlth = st.slider("General Health (1=Excellent, 5=Poor)", 1, 5, 3)
 
-    # Demographics - Matching BRFSS2015 dataset
+    # Demographics - Updated to show Yes/No but convert to 1/0
     with col3:
         Sex = 1 if gender == "Male" else 0
         Age = st.slider("Age category (1=18-24, 13=80+)", 1, 13, 5)
         Education = st.slider("Education (1=Never attended, 6=College graduate)", 1, 6, 4)
         Income = st.slider("Income (1=<$10k, 8=$75k+)", 1, 8, 4)
-        NoDocbcCost = st.radio("Skipped doctor due to cost?", [0, 1], help="0 = no, 1 = yes")
-        AnyHealthcare = st.radio("Healthcare Coverage?", [0, 1], help="0 = no, 1 = yes")
-        DiffWalk = st.radio("Difficulty Walking?", [0, 1], help="0 = no, 1 = yes")
+        NoDocbcCost = st.radio("Skipped doctor due to cost?", ["No", "Yes"], help="0 = no, 1 = yes")
+        AnyHealthcare = st.radio("Healthcare Coverage?", ["No", "Yes"], help="0 = no, 1 = yes")
+        DiffWalk = st.radio("Difficulty Walking?", ["No", "Yes"], help="0 = no, 1 = yes")
 
-    # Health Metrics - Matching BRFSS2015 dataset
+    # Health Metrics
     st.subheader("Health Metrics")
     col4, col5, col6 = st.columns(3)
     with col4:
@@ -153,17 +156,29 @@ if page == "Health Analysis":
     with col6:
         MentHlth = st.slider("Mental Health (days unwell past 30)", 0, 30, 5)
 
-    # Preprocess inputs - Matching BRFSS2015 dataset order
-    # Note: Make sure this order matches exactly with your training data
+    # Preprocess inputs - Convert Yes/No to 1/0 and normalize
     features = [
-        HighBP, HighChol, CholCheck, 
+        yes_no_to_binary(HighBP), 
+        yes_no_to_binary(HighChol), 
+        yes_no_to_binary(CholCheck), 
         normalize_feature(BMI, "BMI"), 
-        Smoker, Stroke, 
-        HeartDiseaseorAttack, PhysActivity, Fruits, Veggies, 
-        HvyAlcoholConsump, AnyHealthcare, NoDocbcCost, GenHlth, 
+        yes_no_to_binary(Smoker), 
+        yes_no_to_binary(Stroke), 
+        yes_no_to_binary(HeartDiseaseorAttack), 
+        yes_no_to_binary(PhysActivity), 
+        yes_no_to_binary(Fruits), 
+        yes_no_to_binary(Veggies), 
+        yes_no_to_binary(HvyAlcoholConsump), 
+        yes_no_to_binary(AnyHealthcare), 
+        yes_no_to_binary(NoDocbcCost), 
+        GenHlth, 
         normalize_feature(MentHlth, "MentHlth"), 
         normalize_feature(PhysHlth, "PhysHlth"), 
-        DiffWalk, Sex, Age, Education, Income
+        yes_no_to_binary(DiffWalk), 
+        Sex, 
+        Age, 
+        Education, 
+        Income
     ]
     
     # Convert to tensor
@@ -193,11 +208,11 @@ if page == "Health Analysis":
         st.write(f"- Diabetes: {risk:.2%}")
 
         # Additional insights based on risk factors
-        if HighBP == 1:
+        if HighBP == "Yes":
             st.write("💡 **Note:** High blood pressure is a significant risk factor for diabetes.")
         if BMI >= 30:
             st.write("💡 **Note:** A BMI of 30 or higher increases diabetes risk.")
-        if PhysActivity == 0:
+        if PhysActivity == "No":
             st.write("💡 **Note:** Regular physical activity can help reduce diabetes risk.")
 
 
