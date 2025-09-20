@@ -140,62 +140,80 @@ if page == "Health Analysis":
 
     st.markdown("---")
 
-    st.subheader("Input Health Information")
+    st.subheader("Health Information")
 
-    col1, col2, col3 = st.columns(3)
+    # Use tabs for better organization
+    tab1, tab2, tab3, tab4 = st.tabs(["Demographics", "Medical History", "Lifestyle", "Health Metrics"])
 
-    # Medical History
-    with col1:
-        HighBP = st.radio("High Blood Pressure?", ["No", "Yes"])
-        HighChol = st.radio("High Cholesterol?", ["No", "Yes"])
-        CholCheck = st.radio("Cholesterol Check in last 5 years?", ["No", "Yes"])
-        Stroke = st.radio("History of Stroke?", ["No", "Yes"])
-        HeartDiseaseorAttack = st.radio("History of Heart Disease or Attack?", ["No", "Yes"])
-
-    # Lifestyle
-    with col2:
-        Smoker = st.radio("Smoked 100+ cigarettes?", ["No", "Yes"])
-        PhysActivity = st.radio("Physical Activity past 30 days?", ["No", "Yes"])
-        Fruits = st.radio("Eat Fruits daily?", ["No", "Yes"])
-        Veggies = st.radio("Eat Vegetables daily?", ["No", "Yes"])
-        HvyAlcoholConsump = st.radio("Heavy Alcohol Consumption?", ["No", "Yes"])
-        GenHlth = st.slider("General Health (1=Excellent, 5=Poor)", 1, 5, 3)
-
-    # Demographics
-    with col3:
-        Sex = 1 if gender == "Male" else 0
+    with tab1:
+        st.markdown("### Demographic Information")
+        col1, col2, col3 = st.columns(3)
         
-        # Age category with clear options
-        Age = st.selectbox(
-            "Age Category",
-            options=list(age_categories.keys()),
-            format_func=lambda x: f"{x} - {age_categories[x]}",
-            index=4  # Default to 40-44 years
-        )
-        
-        Education = st.slider("Education (1=Never attended, 6=College graduate)", 1, 6, 4)
-        
-        # Income with clear options
-        Income = st.selectbox(
-            "Income Category",
-            options=list(income_categories.keys()),
-            format_func=lambda x: f"{x} - {income_categories[x]}",
-            index=3  # Default to $20,000 to $25,000
-        )
-        
-        NoDocbcCost = st.radio("Skipped doctor due to cost?", ["No", "Yes"])
-        AnyHealthcare = st.radio("Healthcare Coverage?", ["No", "Yes"])
-        DiffWalk = st.radio("Difficulty Walking?", ["No", "Yes"])
+        with col1:
+            Sex = 1 if gender == "Male" else 0
+            Age = st.selectbox(
+                "Age Category",
+                options=list(age_categories.keys()),
+                format_func=lambda x: f"{x} - {age_categories[x]}",
+                index=4  # Default to 40-44 years
+            )
+            
+        with col2:
+            Education = st.slider("Education Level (1=Never attended, 6=College graduate)", 1, 6, 4)
+            Income = st.selectbox(
+                "Income Category",
+                options=list(income_categories.keys()),
+                format_func=lambda x: f"{x} - {income_categories[x]}",
+                index=3  # Default to $20,000 to $25,000
+            )
+            
+        with col3:
+            AnyHealthcare = st.radio("Healthcare Coverage?", ["No", "Yes"])
+            NoDocbcCost = st.radio("Skipped doctor due to cost?", ["No", "Yes"])
 
-    # Health Metrics
-    st.subheader("Health Metrics")
-    col4, col5, col6 = st.columns(3)
-    with col4:
-        BMI = bmi
-    with col5:
-        PhysHlth = st.slider("Physical Health (days unwell past 30)", 0, 30, 5)
-    with col6:
-        MentHlth = st.slider("Mental Health (days unwell past 30)", 0, 30, 5)
+    with tab2:
+        st.markdown("### Medical History")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            HighBP = st.radio("High Blood Pressure?", ["No", "Yes"])
+            HighChol = st.radio("High Cholesterol?", ["No", "Yes"])
+            CholCheck = st.radio("Cholesterol Check in last 5 years?", ["No", "Yes"])
+            
+        with col2:
+            Stroke = st.radio("History of Stroke?", ["No", "Yes"])
+            HeartDiseaseorAttack = st.radio("History of Heart Disease or Attack?", ["No", "Yes"])
+            DiffWalk = st.radio("Difficulty Walking?", ["No", "Yes"])
+
+    with tab3:
+        st.markdown("### Lifestyle Factors")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            Smoker = st.radio("Smoked 100+ cigarettes?", ["No", "Yes"])
+            HvyAlcoholConsump = st.radio("Heavy Alcohol Consumption?", ["No", "Yes"])
+            
+        with col2:
+            PhysActivity = st.radio("Physical Activity past 30 days?", ["No", "Yes"])
+            Fruits = st.radio("Eat Fruits daily?", ["No", "Yes"])
+            
+        with col3:
+            Veggies = st.radio("Eat Vegetables daily?", ["No", "Yes"])
+            GenHlth = st.slider("General Health (1=Excellent, 5=Poor)", 1, 5, 3)
+
+    with tab4:
+        st.markdown("### Health Metrics")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            BMI = bmi
+            st.info(f"**BMI:** {bmi} (calculated from height and weight)")
+            
+        with col2:
+            PhysHlth = st.slider("Physical Health (days unwell past 30)", 0, 30, 5)
+            
+        with col3:
+            MentHlth = st.slider("Mental Health (days unwell past 30)", 0, 30, 5)
 
     # Preprocess inputs
     features = [
@@ -226,7 +244,7 @@ if page == "Health Analysis":
     X = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
 
     # Prediction
-    if st.button("Predict Risk"):
+    if st.button("Predict Risk", type="primary", use_container_width=True):
         with torch.no_grad():
             outputs = model(X)
             probabilities = torch.softmax(outputs, dim=1)
@@ -249,12 +267,19 @@ if page == "Health Analysis":
         st.write(f"- Diabetes: {risk:.2%}")
 
         # Additional insights
+        st.subheader("Personalized Insights")
         if HighBP == "Yes":
-            st.write("💡 **Note:** High blood pressure is a significant risk factor for diabetes.")
+            st.write("💡 **Blood Pressure:** High blood pressure is a significant risk factor for diabetes.")
         if BMI >= 30:
-            st.write("💡 **Note:** A BMI of 30 or higher increases diabetes risk.")
+            st.write("💡 **Weight Management:** A BMI of 30 or higher increases diabetes risk.")
         if PhysActivity == "No":
-            st.write("💡 **Note:** Regular physical activity can help reduce diabetes risk.")
+            st.write("💡 **Physical Activity:** Regular physical activity can help reduce diabetes risk.")
+        if HighChol == "Yes":
+            st.write("💡 **Cholesterol:** High cholesterol levels can contribute to diabetes risk.")
+        if Smoker == "Yes":
+            st.write("💡 **Smoking:** Smoking increases the risk of developing diabetes.")
+        if Fruits == "No" or Veggies == "No":
+            st.write("💡 **Nutrition:** A diet rich in fruits and vegetables can help prevent diabetes.")
 
 
 # -----------------------------
@@ -278,23 +303,23 @@ elif page == "AI Health Assistant":
         sleep_hours = st.slider("Average hours of sleep per night", 3, 12, 7)
         stress_level = st.slider("Stress level (1=Low, 10=High)", 1, 10, 5)
         
-    if st.button("Get Health Recommendations"):
+    if st.button("Get Health Recommendations", type="primary"):
         recommendations = []
         
         if activity_level == "Sedentary":
-            recommendations.append("🏃‍♂️ **Increase physical activity**: Aim for at least 30 minutes of moderate exercise most days.")
+            recommendations.append("🏃‍♂️ **Increase physical activity:** Aim for at least 30 minutes of moderate exercise most days.")
         
         if diet_quality in ["Poor", "Average"]:
-            recommendations.append("🥗 **Improve diet**: Focus on whole foods, fruits, vegetables, and limit processed foods.")
+            recommendations.append("🥗 **Improve diet:** Focus on whole foods, fruits, vegetables, and limit processed foods.")
             
         if sleep_hours < 7:
-            recommendations.append("😴 **Prioritize sleep**: Aim for 7-9 hours of quality sleep per night.")
+            recommendations.append("😴 **Prioritize sleep:** Aim for 7-9 hours of quality sleep per night.")
             
         if stress_level > 7:
-            recommendations.append("🧘‍♂️ **Manage stress**: Try meditation, deep breathing, or other relaxation techniques.")
+            recommendations.append("🧘‍♂️ **Manage stress:** Try meditation, deep breathing, or other relaxation techniques.")
             
         if family_history == "Yes":
-            recommendations.append("👨‍👩‍👧‍👦 **Family history**: Be extra vigilant about regular check-ups due to your family history.")
+            recommendations.append("👨‍👩‍👧‍👦 **Family history:** Be extra vigilant about regular check-ups due to your family history.")
             
         if recommendations:
             st.success("### Personalized Recommendations")
