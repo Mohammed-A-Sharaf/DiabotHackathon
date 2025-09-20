@@ -137,13 +137,13 @@ if page == "Health Analysis":
         Sex = 1 if gender == "Male" else 0
         
         # Age category with better description
-        st.markdown("**Age Category**"), help=("1=18-24, 2=25-29, 3=30-34, 4=35-39, 5=40-44, 6=45-49, 7=50-54, 8=55-59, 9=60-64, 10=65-69, 11=70-74, 12=75-79, 13=80+")
+        st.markdown("**Age Category**"), help="1=18-24, 2=25-29, 3=30-34, 4=35-39, 5=40-44, 6=45-49, 7=50-54, 8=55-59, 9=60-64, 10=65-69, 11=70-74, 12=75-79, 13=80+")
         Age = st.slider("", 1, 13, 5, label_visibility="collapsed")
         
         Education = st.slider("Education (1=Never attended, 6=College graduate)", 1, 6, 4)
         
         # Income with better description
-        st.markdown("**Income Category**"), help=("1=<$10k, 2=$10k-15k, 3=$15k-20k, 4=$20k-25k, 5=$25k-35k, 6=$35k-50k, 7=$50k-75k, 8=$75k+")
+        st.markdown("**Income Category**"), help="1=<$10k, 2=$10k-15k, 3=$15k-20k, 4=$20k-25k, 5=$25k-35k, 6=$35k-50k, 7=$50k-75k, 8=$75k+")
         Income = st.slider("", 1, 8, 4, label_visibility="collapsed")
         
         NoDocbcCost = st.radio("Skipped doctor due to cost?", ["No", "Yes"])
