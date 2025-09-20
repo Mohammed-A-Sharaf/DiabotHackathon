@@ -126,6 +126,8 @@ if page == "Health Analysis":
         Income = st.slider("Income (1=<$10k, 8=$75k+)", 1, 8, 4)
         NoDocbcCost = st.radio("Skipped doctor due to cost?", [0, 1])
         AnyHealthcare = st.radio("Healthcare Coverage?", [0, 1])
+        CholCheck = st.radio("Cholesterol Check in last 5 years?", [0, 1])   # <-- Added back
+
 
     # BMI, Physical & Mental Health
     st.subheader("Health Metrics")
