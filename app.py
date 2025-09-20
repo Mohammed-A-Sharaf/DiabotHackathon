@@ -4,6 +4,7 @@ import torch.nn as nn
 import pandas as pd
 import numpy as np
 import json
+import boto3
 
 # -----------------------------
 # Model Definition
@@ -291,18 +292,26 @@ elif page == "AI Health Assistant":
     
     st.info("Chat with our AI health assistant for personalized diabetes prevention and management advice.")
     
-    # Initialize the Bedrock client
+    # Initialize the Bedrock client using secrets
     @st.cache_resource
     def get_bedrock_client():
         try:
-            import boto3
+            # Get credentials from Streamlit secrets
+            aws_access_key = st.secrets["AWS_ACCESS_KEY_ID"]
+            aws_secret_key = st.secrets["AWS_SECRET_ACCESS_KEY"]
+            region = st.secrets["AWS_DEFAULT_REGION"]
+            
+            # Initialize the client with credentials
             client = boto3.client(
                 service_name='bedrock-runtime',
-                region_name='us-east-1'  # Use your preferred region
+                region_name=region,
+                aws_access_key_id=aws_access_key,
+                aws_secret_access_key=aws_secret_key
             )
             return client
         except Exception as e:
             st.error(f"Error initializing AWS Bedrock client: {e}")
+            st.error("Please make sure your AWS credentials are correctly set in Streamlit secrets.")
             return None
     
     # Initialize session state for chat history
@@ -323,7 +332,7 @@ elif page == "AI Health Assistant":
             if bedrock_client is None:
                 return "Error connecting to AI service. Please try again later."
             
-            # Format the prompt for Llama 3 :cite[4]:cite[7]
+            # Format the prompt for Llama 3
             formatted_prompt = f"""
 <|begin_of_text|><|start_header_id|>user<|end_header_id|>
 {prompt}
