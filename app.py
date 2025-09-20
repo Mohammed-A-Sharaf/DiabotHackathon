@@ -13,7 +13,8 @@ class DiabetesNet(nn.Module):
         self.fc1 = nn.Linear(input_dim, 128)
         self.fc2 = nn.Linear(128, 64)
         self.fc3 = nn.Linear(64, 32)
-        self.out = nn.Linear(32, 2)
+        self.fc4 = nn.Linear(32, 16)   # ← missing before
+        self.out = nn.Linear(16, 2)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.3)
 
@@ -23,8 +24,11 @@ class DiabetesNet(nn.Module):
         x = self.relu(self.fc2(x))
         x = self.dropout(x)
         x = self.relu(self.fc3(x))
+        x = self.dropout(x)
+        x = self.relu(self.fc4(x))     # ← add this forward pass
         x = self.out(x)
         return x
+
 
 # Load trained model
 model = DiabetesNet(input_dim=21)
