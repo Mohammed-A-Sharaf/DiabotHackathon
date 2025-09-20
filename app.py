@@ -295,20 +295,69 @@ if page == "Health Analysis":
         st.write(f"- No Diabetes: {(1-risk):.2%}")
         st.write(f"- Diabetes: {risk:.2%}")
 
-        # Additional insights
-        st.subheader("Personalized Insights")
+        # Enhanced personalized insights with AI analysis
+        st.subheader("Personalized Health Insights")
+        
+        # Create a personalized analysis based on the user's data
+        insights = []
+        
+        # BMI analysis
+        if BMI < 18.5:
+            insights.append("Your BMI suggests you're underweight. Consider a balanced diet with adequate nutrition.")
+        elif BMI >= 25 and BMI < 30:
+            insights.append("Your BMI indicates overweight. Even a 5-7% weight loss can significantly reduce diabetes risk.")
+        elif BMI >= 30:
+            insights.append("Your BMI indicates obesity, a major diabetes risk factor. Focus on gradual weight loss through diet and exercise.")
+        
+        # Blood pressure analysis
         if HighBP == "Yes":
-            st.write("💡 **Blood Pressure:** High blood pressure is a significant risk factor for diabetes.")
-        if BMI >= 30:
-            st.write("💡 **Weight Management:** A BMI of 30 or higher increases diabetes risk.")
-        if PhysActivity == "No":
-            st.write("💡 **Physical Activity:** Regular physical activity can help reduce diabetes risk.")
+            insights.append("Managing your high blood pressure is crucial. Reduce sodium intake and monitor your levels regularly.")
+        
+        # Cholesterol analysis
         if HighChol == "Yes":
-            st.write("💡 **Cholesterol:** High cholesterol levels can contribute to diabetes risk.")
-        if Smoker == "Yes":
-            st.write("💡 **Smoking:** Smoking increases the risk of developing diabetes.")
+            insights.append("High cholesterol increases diabetes risk. Consider reducing saturated fats and increasing fiber intake.")
+        
+        # Activity analysis
+        if PhysActivity == "No":
+            insights.append("Regular physical activity (150 mins/week) can improve insulin sensitivity. Start with brisk walking.")
+        
+        # Diet analysis
         if Fruits == "No" or Veggies == "No":
-            st.write("💡 **Nutrition:** A diet rich in fruits and vegetables can help prevent diabetes.")
+            insights.append("Aim for 5 servings of fruits and vegetables daily. They're rich in fiber and antioxidants that protect against diabetes.")
+        
+        # Mental health analysis
+        if MentHlth > 7:
+            insights.append("Your mental health days are elevated. Stress management techniques may help reduce diabetes risk.")
+        
+        # Smoking analysis
+        if Smoker == "Yes":
+            insights.append("Smoking increases insulin resistance. Consider cessation programs to reduce your diabetes risk.")
+        
+        # Display the insights
+        if insights:
+            for i, insight in enumerate(insights, 1):
+                st.write(f"{i}. {insight}")
+        else:
+            st.write("Your health profile shows no significant risk factors. Maintain your healthy habits!")
+        
+        # Add specific tips based on risk level
+        st.subheader("Personalized Recommendations")
+        
+        if risk < 0.25:
+            st.write("• Continue your current healthy lifestyle")
+            st.write("• Schedule annual checkups to monitor your health")
+            st.write("• Maintain a balanced diet and regular exercise routine")
+        elif risk < 0.6:
+            st.write("• Consider increasing physical activity to 30 minutes daily")
+            st.write("• Focus on whole foods and reduce processed food intake")
+            st.write("• Monitor your blood sugar levels periodically")
+        else:
+            st.write("• Consult with a healthcare provider for a comprehensive plan")
+            st.write("• Consider working with a nutritionist for meal planning")
+            st.write("• Regular blood glucose monitoring is recommended")
+        
+        # Add the required warning
+        st.warning("**Important Notice:** These insights and recommendations are generated based on the information provided and are not a substitute for professional medical advice. Please consult with your healthcare provider for personalized medical guidance.")
 
 
 # -----------------------------
