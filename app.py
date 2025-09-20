@@ -252,6 +252,33 @@ if page == "Health Analysis":
             probabilities = torch.softmax(outputs, dim=1)
             risk = probabilities[0][1].item()
 
+        # Store health data in session state for the AI Health Assistant
+        st.session_state.health_data = {
+            "patient_name": patient_name,
+            "age": age,
+            "gender": gender,
+            "bmi": bmi,
+            "risk": f"{risk:.2%}",
+            "HighBP": HighBP,
+            "HighChol": HighChol,
+            "CholCheck": CholCheck,
+            "Stroke": Stroke,
+            "HeartDiseaseorAttack": HeartDiseaseorAttack,
+            "PhysActivity": PhysActivity,
+            "Fruits": Fruits,
+            "Veggies": Veggies,
+            "HvyAlcoholConsump": HvyAlcoholConsump,
+            "GenHlth": GenHlth,
+            "MentHlth": MentHlth,
+            "PhysHlth": PhysHlth,
+            "DiffWalk": DiffWalk,
+            "Smoker": Smoker,
+            "AnyHealthcare": AnyHealthcare,
+            "NoDocbcCost": NoDocbcCost,
+            "Education": Education,
+            "Income": Income
+        }
+        
         st.success(f"Predicted Diabetes Risk: {risk:.2%}")
 
         # Risk interpretation
@@ -288,9 +315,7 @@ if page == "Health Analysis":
 # AI Health Assistant Page with AWS Bedrock Chatbot
 # -----------------------------
 elif page == "AI Health Assistant":
-    st.markdown("## AI Health Assistant Chatbot")
-    
-    st.info("Chat with our AI health assistant for personalized diabetes prevention and management advice.")
+    st.markdown("## AI Health Assistant")
     
     # Initialize the Bedrock client using secrets
     @st.cache_resource
@@ -317,10 +342,34 @@ elif page == "AI Health Assistant":
     # Initialize session state for chat history
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. How can I help you today?"}
+            {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me."}
         ]
     
+    # Check if health data exists in session state
+    health_data_exists = "health_data" in st.session_state
+    
+    # Display health data summary if available
+    if health_data_exists:
+        st.info("### Your Health Summary")
+        health_data = st.session_state.health_data
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write(f"**Age:** {health_data.get('age', 'Not provided')}")
+            st.write(f"**Gender:** {health_data.get('gender', 'Not provided')}")
+            st.write(f"**BMI:** {health_data.get('bmi', 'Not provided')}")
+            st.write(f"**Diabetes Risk:** {health_data.get('risk', 'Not calculated')}")
+        
+        with col2:
+            st.write(f"**Blood Pressure:** {'High' if health_data.get('HighBP') == 'Yes' else 'Normal'}")
+            st.write(f"**Cholesterol:** {'High' if health_data.get('HighChol') == 'Yes' else 'Normal'}")
+            st.write(f"**Activity Level:** {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}")
+            st.write(f"**General Health:** {health_data.get('GenHlth', 'Not provided')}/5")
+    
     # Display chat messages from history
+    st.markdown("---")
+    st.markdown("### Chat with Health Assistant")
+    
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -350,7 +399,7 @@ elif page == "AI Health Assistant":
             
             # Send the request to the Bedrock model
             response = bedrock_client.invoke_model(
-                modelId='meta.llama3-8b-instruct-v1:0',  # Using Llama 3 Instruct
+                modelId='meta.llama3-8b-instruct-v1:0',
                 body=body,
                 contentType='application/json',
                 accept='application/json'
@@ -376,11 +425,32 @@ elif page == "AI Health Assistant":
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 # Create a context-aware prompt for the health assistant
-                health_context = f"""
+                health_context = ""
+                
+                if health_data_exists:
+                    health_data = st.session_state.health_data
+                    health_context = f"""
+Patient Health Context:
+- Age: {health_data.get('age', 'Not provided')}
+- Gender: {health_data.get('gender', 'Not provided')}
+- BMI: {health_data.get('bmi', 'Not provided')}
+- Diabetes Risk: {health_data.get('risk', 'Not calculated')}
+- Blood Pressure: {'High' if health_data.get('HighBP') == 'Yes' else 'Normal'}
+- Cholesterol: {'High' if health_data.get('HighChol') == 'Yes' else 'Normal'}
+- Physical Activity: {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}
+- Diet: Fruits: {'Yes' if health_data.get('Fruits') == 'Yes' else 'No'}, Vegetables: {'Yes' if health_data.get('Veggies') == 'Yes' else 'No'}
+- General Health: {health_data.get('GenHlth', 'Not provided')}/5
+- Smoking: {'Yes' if health_data.get('Smoker') == 'Yes' else 'No'}
+- Alcohol: {'Heavy' if health_data.get('HvyAlcoholConsump') == 'Yes' else 'Moderate/None'}
+
+"""
+                
+                full_prompt = f"""
 You are a friendly and knowledgeable health assistant specializing in diabetes prevention and management.
 Provide helpful, evidence-based advice about nutrition, exercise, and lifestyle changes.
 Always remind users to consult healthcare professionals for medical advice.
 
+{health_context}
 Current conversation context: {st.session_state.messages[-3:] if len(st.session_state.messages) > 3 else 'New conversation'}
 
 User question: {prompt}
@@ -388,44 +458,40 @@ User question: {prompt}
 Please provide a helpful, concise response focused on diabetes prevention and management.
 """
                 
-                full_response = invoke_llama(health_context)
+                full_response = invoke_llama(full_prompt)
                 st.markdown(full_response)
         
         # Add assistant response to chat history
         st.session_state.messages.append({"role": "assistant", "content": full_response})
     
-    # Additional health assessment tools
+    # Quick action buttons
     st.markdown("---")
-    st.subheader("Quick Health Assessment")
+    st.markdown("### Quick Actions")
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
-        family_history = st.radio("Family history of diabetes?", ["No", "Yes"])
-        activity_level = st.radio("Physical activity level?", ["Sedentary", "Moderate", "Active"])
-        diet_quality = st.radio("How would you rate your diet?", ["Poor", "Average", "Good"])
+        if st.button("Get Diet Recommendations", help="Get personalized diet suggestions based on your health profile"):
+            prompt = "Provide specific dietary recommendations for diabetes prevention"
+            if health_data_exists:
+                prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            st.rerun()
     
     with col2:
-        sleep_hours = st.slider("Average hours of sleep per night", 3, 12, 7)
-        stress_level = st.slider("Stress level (1=Low, 10=High)", 1, 10, 5)
+        if st.button("Exercise Plan", help="Get a personalized exercise plan"):
+            prompt = "Suggest an appropriate exercise routine"
+            if health_data_exists:
+                activity_level = "active" if st.session_state.health_data.get('PhysActivity') == 'Yes' else "sedentary"
+                prompt += f" for someone who is currently {activity_level}"
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            st.rerun()
     
-    if st.button("Generate Personalized Health Report", type="primary"):
-        # Create a comprehensive health assessment prompt
-        assessment_prompt = f"""
-Create a personalized health report based on these factors:
-- Family history of diabetes: {family_history}
-- Physical activity level: {activity_level}
-- Diet quality: {diet_quality}
-- Sleep hours per night: {sleep_hours}
-- Stress level: {stress_level}/10
-
-Please provide:
-1. Diabetes risk assessment
-2. 3 specific lifestyle recommendations
-3. Encouraging closing remarks
-"""
-        
-        with st.spinner("Generating your personalized health report..."):
-            report = invoke_llama(assessment_prompt, max_tokens=600)
-            st.success("### Your Personalized Health Report")
-            st.markdown(report)
+    with col3:
+        if st.button("Risk Explanation", help="Understand your diabetes risk factors"):
+            if health_data_exists:
+                prompt = f"Explain my diabetes risk of {st.session_state.health_data.get('risk')} and what factors contribute to it"
+            else:
+                prompt = "What are the main risk factors for diabetes?"
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            st.rerun()
