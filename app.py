@@ -1,42 +1,15 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
-import random
 import torch
 import torch.nn as nn
+import pandas as pd
+import numpy as np
 
-# ------------------------------
-# Page Configuration
-# ------------------------------
-st.set_page_config(
-    page_title="HealthGuard AI - Diabetes Dashboard",
-    page_icon="🏥",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# ------------------------------
-# Custom CSS
-# ------------------------------
-st.markdown("""
-<style>
-    .main-header {font-size: 2.5rem; color: #1f77b4; padding-bottom: 10px;}
-    .section-header {font-size: 1.8rem; color: #1f77b4; border-bottom: 2px solid #1f77b4; padding: 10px 0;}
-    .metric-label {font-weight: bold; color: #1f77b4;}
-    .alert {padding: 10px; background-color: #ffcccc; border-radius: 5px; margin: 10px 0;}
-    .good {padding: 10px; background-color: #ccffcc; border-radius: 5px; margin: 10px 0;}
-</style>
-""", unsafe_allow_html=True)
-
-# ------------------------------
-# Define Model
-# ------------------------------
-class DiabetesModel(nn.Module):
+# -----------------------------
+# Model Definition
+# -----------------------------
+class DiabetesNet(nn.Module):
     def __init__(self, input_dim=21):
-        super(DiabetesModel, self).__init__()
+        super(DiabetesNet, self).__init__()
         self.fc1 = nn.Linear(input_dim, 128)
         self.fc2 = nn.Linear(128, 64)
         self.fc3 = nn.Linear(64, 32)
@@ -56,143 +29,179 @@ class DiabetesModel(nn.Module):
         x = self.out(x)
         return x
 
+# Load Model Safely
+@st.cache_resource
+def load_model():
+    try:
+        model = DiabetesNet(input_dim=21)
+        model.load_state_dict(torch.load("Diabetes_model.pth", map_location="cpu"))
+        model.eval()
+        return model
+    except Exception as e:
+        st.error(f"⚠️ Error loading model: {e}")
+        return None
 
-# Load model
-model = DiabetesModel()
-try:
-    model.load_state_dict(torch.load("Diabetes_model.pth", map_location="cpu"))
-    model.eval()
-except Exception as e:
-    st.error("⚠️ Error loading model: " + str(e))
+model = load_model()
 
-# ------------------------------
-# Sidebar
-# ------------------------------
-with st.sidebar:
-    st.title("HealthGuard AI 🏥")
-    st.markdown("### Patient Dashboard")
+# -----------------------------
+# Streamlit Page Setup
+# -----------------------------
+st.set_page_config(
+    page_title="Diabetes Risk Prediction",
+    page_icon="🩺",
+    layout="wide"
+)
 
-    patient_options = ["John Doe (ID: 12345)", "Jane Smith (ID: 67890)", "Robert Johnson (ID: 54321)"]
-    selected_patient = st.selectbox("Select Patient", patient_options)
+# -----------------------------
+# Custom CSS Styling
+# -----------------------------
+st.markdown(
+    """
+    <style>
+    .main {
+        background-color: #f8fafc;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .stButton>button {
+        background: linear-gradient(90deg, #2563eb, #3b82f6);
+        color: white;
+        font-weight: 600;
+        border-radius: 12px;
+        padding: 0.6em 1.2em;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: 0.3s ease;
+    }
+    .stButton>button:hover {
+        background: linear-gradient(90deg, #1d4ed8, #2563eb);
+        transform: scale(1.02);
+    }
+    .stCard {
+        background-color: white;
+        border-radius: 16px;
+        padding: 1.5em;
+        margin: 0.8em 0;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    .stTabs [data-baseweb="tab"] {
+        font-weight: 600;
+        color: #1f2937;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #2563eb;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-    selected_date = st.date_input("Select Date", datetime.now())
+st.title("🩺 Diabetes Risk Prediction Dashboard")
 
-    st.markdown("---")
-    st.markdown("### Navigation")
-    page = st.radio("Go to", ["Health Overview", "Detailed Analysis", "Appointment Scheduling", "AI Health Assistant"])
+# -----------------------------
+# Tabs
+# -----------------------------
+tabs = st.tabs(["📊 Detailed Analysis", "📁 Patient Data"])
 
-    st.markdown("---")
-    st.markdown("### Quick Stats")
-    st.metric("Total Patients", "342")
-    st.metric("High Risk Patients", "27")
-    st.metric("Avg HbA1c", "6.8%")
-
-# ------------------------------
-# Health Overview Page
-# ------------------------------
-if page == "Health Overview":
-    st.markdown('<p class="main-header">Patient Health Dashboard</p>', unsafe_allow_html=True)
+# -----------------------------
+# Tab 1: Detailed Analysis
+# -----------------------------
+with tabs[0]:
+    st.markdown("<div class='stCard'>", unsafe_allow_html=True)
+    st.subheader("📊 Detailed Risk Analysis")
 
     col1, col2, col3 = st.columns(3)
+
     with col1:
-        st.markdown("**Patient:** John Doe")
-        st.markdown("**Age:** 52 years")
-        st.markdown("**Gender:** Male")
+        st.subheader("🏥 Medical History")
+        HighBP = st.radio("High Blood Pressure?", [0, 1])
+        HighChol = st.radio("High Cholesterol?", [0, 1])
+        Stroke = st.radio("History of Stroke?", [0, 1])
+        HeartDisease = st.radio("Heart Disease?", [0, 1])
+        DiffWalk = st.radio("Difficulty Walking?", [0, 1])
+
     with col2:
-        st.markdown("**Height:** 175 cm")
-        st.markdown("**Weight:** 82 kg")
-        st.markdown("**BMI:** 26.8")
+        st.subheader("💡 Lifestyle")
+        Smoker = st.radio("Smoked 100+ cigarettes?", [0, 1])
+        PhysActivity = st.radio("Physical Activity?", [0, 1])
+        Fruits = st.radio("Eat Fruits daily?", [0, 1])
+        Veggies = st.radio("Eat Vegetables daily?", [0, 1])
+        HvyAlcoholConsump = st.radio("Heavy Alcohol Consumption?", [0, 1])
+        GenHlth = st.slider("General Health (1=Excellent, 5=Poor)", 1, 5, 3)
+
     with col3:
-        st.markdown("**Last Checkup:** 15 days ago")
-        st.markdown("**Next Appointment:** In 2 weeks")
-        st.markdown("**Status:** Pre-Diabetic")
+        st.subheader("🌍 Demographics & Access")
+        Sex = st.radio("Sex (0=Female, 1=Male)", [0, 1])
+        Age = st.slider("Age category (1=18-24, 13=80+)", 1, 13, 5)
+        Education = st.slider("Education (1=None, 6=Graduate)", 1, 6, 4)
+        Income = st.slider("Income (1=<$10k, 8=$75k+)", 1, 8, 4)
+        NoDocbcCost = st.radio("Skipped doctor due to cost?", [0, 1])
+        AnyHealthcare = st.radio("Have Healthcare Coverage?", [0, 1])
 
-    st.markdown("---")
-    st.markdown('<p class="section-header">Organ Health Status</p>', unsafe_allow_html=True)
+    st.subheader("📊 Health Metrics")
+    col4, col5, col6 = st.columns(3)
+    with col4:
+        BMI = st.slider("BMI (0–100)", 10, 50, 25)
+    with col5:
+        PhysHlth = st.slider("Physical Health (days unwell)", 0, 30, 5)
+    with col6:
+        MentHlth = st.slider("Mental Health (days unwell)", 0, 30, 5)
 
-    organs = ['Lungs', 'Stomach', 'Liver', 'Heart', 'Brain']
-    health_values = [85, 72, 65, 78, 90]
+    # Normalize
+    def normalize(value, min_val, max_val):
+        return (value - min_val) / (max_val - min_val) if max_val > min_val else 0
 
-    org_cols = st.columns(5)
-    for i, col in enumerate(org_cols):
-        with col:
-            color = "green" if health_values[i] > 80 else "orange" if health_values[i] > 60 else "red"
-            st.markdown(f"<h3 style='text-align: center;'>{organs[i]}</h3>", unsafe_allow_html=True)
-            st.markdown(f"<h2 style='text-align: center; color: {color};'>{health_values[i]}%</h2>", unsafe_allow_html=True)
+    BMI = normalize(BMI, 10, 50)
+    PhysHlth = normalize(PhysHlth, 0, 30)
+    MentHlth = normalize(MentHlth, 0, 30)
 
-    st.markdown("---")
-    st.markdown('<p class="section-header">Blood Sugar Tracking</p>', unsafe_allow_html=True)
+    features = [
+        HighBP, HighChol, BMI, Smoker, Stroke, HeartDisease, PhysActivity,
+        Fruits, Veggies, HvyAlcoholConsump, AnyHealthcare, NoDocbcCost,
+        GenHlth, MentHlth, PhysHlth, DiffWalk, Sex, Age, Education, Income
+    ]
 
-    dates = pd.date_range(start=selected_date - timedelta(days=30), end=selected_date)
-    sugar_levels = [random.randint(100, 180) for _ in range(len(dates))]
-    fig = px.line(x=dates, y=sugar_levels,
-                  labels={'x': 'Date', 'y': 'Blood Sugar (mg/dL)'},
-                  title="Blood Sugar Levels Over Time")
-    fig.add_hrect(y0=70, y1=140, line_width=0, fillcolor="green", opacity=0.2)
-    st.plotly_chart(fig, use_container_width=True)
+    X = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
 
-# ------------------------------
-# Detailed Analysis + Model
-# ------------------------------
-elif page == "Detailed Analysis":
-    st.markdown('<p class="main-header">Detailed Health Analysis</p>', unsafe_allow_html=True)
-    st.markdown('<p class="section-header">AI-Powered Diabetes Prediction</p>', unsafe_allow_html=True)
-
-    # Input fields for model
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        pregnancies = st.number_input("Pregnancies", 0, 20, 1)
-        glucose = st.number_input("Glucose Level", 0, 200, 120)
-        bp = st.number_input("Blood Pressure", 0, 150, 70)
-    with col2:
-        skin = st.number_input("Skin Thickness", 0, 100, 20)
-        insulin = st.number_input("Insulin", 0, 900, 80)
-        bmi = st.number_input("BMI", 0.0, 70.0, 25.0)
-    with col3:
-        dpf = st.number_input("Diabetes Pedigree Function", 0.0, 2.5, 0.5)
-        age = st.number_input("Age", 0, 120, 35)
-
-    if st.button("Run Prediction"):
-        try:
-            X = torch.tensor([[pregnancies, glucose, bp, skin, insulin, bmi, dpf, age]], dtype=torch.float32)
+    if st.button("🔮 Predict Risk"):
+        if model is not None:
             with torch.no_grad():
-                prob = model(X).item()
-            st.metric("Prediction Probability", f"{prob*100:.2f}%")
-            if prob > 0.5:
-                st.markdown('<div class="alert"><b>High Risk:</b> The model predicts a high chance of diabetes.</div>', unsafe_allow_html=True)
+                outputs = model(X)
+                probabilities = torch.softmax(outputs, dim=1)
+                risk = probabilities[0][1].item()
+
+            st.success(f"**Predicted Diabetes Risk: {risk:.2%}**")
+
+            if risk < 0.25:
+                st.info("🟢 Low Risk – Maintain your healthy lifestyle!")
+            elif risk < 0.6:
+                st.warning("🟠 Moderate Risk – Consider lifestyle improvements.")
             else:
-                st.markdown('<div class="good"><b>Low Risk:</b> The model predicts a low chance of diabetes.</div>', unsafe_allow_html=True)
-        except Exception as e:
-            st.error(f"Error running prediction: {e}")
+                st.error("🔴 High Risk – Please consult a healthcare professional.")
 
-# ------------------------------
-# Appointment Scheduling Page
-# ------------------------------
-elif page == "Appointment Scheduling":
-    st.markdown('<p class="main-header">Appointment Scheduling</p>', unsafe_allow_html=True)
-    st.write("📅 Schedule and view your medical appointments here.")
+            st.progress(risk)
+            st.write("**Probability Breakdown:**")
+            st.write(f"- No Diabetes: {(1-risk):.2%}")
+            st.write(f"- Diabetes: {risk:.2%}")
+        else:
+            st.error("⚠️ Model not loaded correctly.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# ------------------------------
-# AI Health Assistant Page
-# ------------------------------
-elif page == "AI Health Assistant":
-    st.markdown('<p class="main-header">AI Health Assistant</p>', unsafe_allow_html=True)
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-    if prompt := st.chat_input("Ask a question about your health..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        response = "I'm here to help! Based on your records, please consult your doctor for personalized advice."
-        with st.chat_message("assistant"):
-            st.markdown(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+# -----------------------------
+# Tab 2: Patient Data
+# -----------------------------
+with tabs[1]:
+    st.markdown("<div class='stCard'>", unsafe_allow_html=True)
+    st.subheader("📁 Patient Data from Database")
 
-# ------------------------------
-# Footer
-# ------------------------------
-st.markdown("---")
-st.markdown("**HealthGuard AI** | *Predictive Healthcare Analytics*")
+    # Example data (replace with DB integration later)
+    data = {
+        "Patient ID": [1, 2, 3],
+        "Name": ["Alice", "Bob", "Charlie"],
+        "Age": [45, 52, 37],
+        "BMI": [24.5, 29.1, 31.2],
+        "Risk": ["Low", "High", "Moderate"]
+    }
+    df = pd.DataFrame(data)
+    st.dataframe(df, use_container_width=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
