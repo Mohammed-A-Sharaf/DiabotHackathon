@@ -58,7 +58,7 @@ st.set_page_config(
 # Sidebar navigation
 with st.sidebar:
     st.title("HealthGuard AI 🏥")
-    page = st.radio("Navigation", ["Health Analysis", "Appointment Scheduling"])
+    page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant"])
 
     st.markdown("---")
     st.markdown("### Quick Stats")
@@ -171,41 +171,38 @@ if page == "Health Analysis":
         st.write(f"- No Diabetes: {(1-risk):.2%}")
         st.write(f"- Diabetes: {risk:.2%}")
 
+
 # -----------------------------
-# Appointment Scheduling
+# AI Health Assistant Page
 # -----------------------------
-elif page == "Appointment Scheduling":
-    st.markdown("## 📅 Appointment Scheduling")
+elif page == "AI Health Assistant":
+    st.markdown("## 🤖 AI Health Assistant")
 
-    col1, col2 = st.columns(2)
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-    with col1:
-        st.subheader("Recommended Checkups")
-        appointments = [
-            {"type": "Endocrinologist Consultation", "urgency": "High", "recommended_date": "Within 2 weeks"},
-            {"type": "Nutritionist Appointment", "urgency": "Medium", "recommended_date": "Within 4 weeks"},
-            {"type": "Ophthalmology Screening", "urgency": "Medium", "recommended_date": "Within 6 weeks"},
-            {"type": "Podiatry Checkup", "urgency": "Low", "recommended_date": "Within 8 weeks"}
-        ]
+    # Display chat messages
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-        for appt in appointments:
-            urgency_color = "red" if appt["urgency"] == "High" else "orange" if appt["urgency"] == "Medium" else "green"
-            st.markdown(f"""
-            <div style="padding: 10px; border-left: 5px solid {urgency_color}; margin: 10px 0; background-color: #f9f9f9;">
-                <h4>{appt['type']}</h4>
-                <p><b>Urgency:</b> <span style="color: {urgency_color};">{appt['urgency']}</span><br>
-                <b>Recommended Date:</b> {appt['recommended_date']}</p>
-            </div>
-            """, unsafe_allow_html=True)
+    # User input
+    if prompt := st.chat_input("Ask me anything about your health..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
 
-    with col2:
-        st.subheader("Schedule New Appointment")
-        appointment_type = st.selectbox("Appointment Type",
-                                        ["Endocrinologist", "Primary Care", "Nutritionist", "Ophthalmologist", "Podiatrist"])
-        appointment_date = st.date_input("Preferred Date")
-        appointment_time = st.time_input("Preferred Time")
-        reason = st.text_area("Reason for visit")
+        # Simple rule-based assistant (can be replaced with real AI backend)
+        if "blood sugar" in prompt.lower():
+            response = "Your blood sugar trends suggest careful monitoring. Try to maintain a balanced diet and regular exercise."
+        elif "diet" in prompt.lower():
+            response = "Include more fiber, lean proteins, and avoid excess sugar. Would you like a sample meal plan?"
+        elif "exercise" in prompt.lower():
+            response = "Daily 30-minute walks or moderate physical activity can significantly reduce diabetes risk."
+        else:
+            response = "I can provide insights about your blood sugar, diet, exercise, or medication. What would you like to focus on?"
 
-        if st.button("Schedule Appointment"):
-            st.success(f"✅ Appointment with {appointment_type} scheduled for {appointment_date} at {appointment_time}")
-
+        with st.chat_message("assistant"):
+            st.markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})
