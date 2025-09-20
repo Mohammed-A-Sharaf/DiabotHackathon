@@ -395,6 +395,10 @@ elif page == "AI Health Assistant":
     if "language" not in st.session_state:
         st.session_state.language = "English"
     
+    # Initialize show_quick_actions in session state
+    if "show_quick_actions" not in st.session_state:
+        st.session_state.show_quick_actions = True
+    
     # Language selection dropdown
     col1, col2 = st.columns([3, 1])
     with col1:
@@ -408,6 +412,7 @@ elif page == "AI Health Assistant":
             st.session_state.messages = [
                 {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me."}
             ]
+            st.session_state.show_quick_actions = True
             st.rerun()
     
     # Check if health data exists in session state
@@ -430,6 +435,42 @@ elif page == "AI Health Assistant":
             st.write(f"**Cholesterol:** {'High' if health_data.get('HighChol') == 'Yes' else 'Normal'}")
             st.write(f"**Activity Level:** {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}")
             st.write(f"**General Health:** {health_data.get('GenHlth', 'Not provided')}/5")
+    
+    # Display quick actions if no messages beyond the initial one
+    if st.session_state.show_quick_actions and len(st.session_state.messages) == 1:
+        st.markdown("---")
+        st.markdown("### Quick Actions")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("Get Diet Recommendations", help="Get personalized diet suggestions based on your health profile"):
+                prompt = "Provide specific dietary recommendations for diabetes prevention"
+                if health_data_exists:
+                    prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.session_state.show_quick_actions = False
+                st.rerun()
+        
+        with col2:
+            if st.button("Exercise Plan", help="Get a personalized exercise plan"):
+                prompt = "Suggest an appropriate exercise routine"
+                if health_data_exists:
+                    activity_level = "active" if st.session_state.health_data.get('PhysActivity') == 'Yes' else "sedentary"
+                    prompt += f" for someone who is currently {activity_level}"
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.session_state.show_quick_actions = False
+                st.rerun()
+        
+        with col3:
+            if st.button("Risk Explanation", help="Understand your diabetes risk factors"):
+                if health_data_exists:
+                    prompt = f"Explain my diabetes risk of {st.session_state.health_data.get('risk')} and what factors contribute to it"
+                else:
+                    prompt = "What are the main risk factors for diabetes?"
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.session_state.show_quick_actions = False
+                st.rerun()
     
     # Display chat messages from history
     st.markdown("---")
@@ -480,12 +521,8 @@ elif page == "AI Health Assistant":
         except Exception as e:
             return f"Error: {str(e)}"
     
-    # Chat input
-    chat_placeholder = st.empty()
-    with chat_placeholder:
-        prompt = st.chat_input("Ask about diabetes prevention, nutrition, or exercise...")
-    
-    if prompt:
+    # Function to process user input and generate AI response
+    def process_user_input(prompt):
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
         
@@ -539,35 +576,21 @@ Please provide a helpful, concise response focused on diabetes prevention and ma
         
         # Add assistant response to chat history
         st.session_state.messages.append({"role": "assistant", "content": full_response})
+        
+        # Hide quick actions after first user input
+        st.session_state.show_quick_actions = False
     
-    # Quick action buttons
-    st.markdown("---")
-    st.markdown("### Quick Actions")
+    # Check if we need to process a quick action prompt
+    if len(st.session_state.messages) > 1 and st.session_state.messages[-1]["role"] == "user" and st.session_state.messages[-1]["content"] not in [msg["content"] for msg in st.session_state.messages[:-1]]:
+        user_message = st.session_state.messages[-1]["content"]
+        process_user_input(user_message)
+        st.rerun()
     
-    col1, col2, col3 = st.columns(3)
+    # Chat input
+    chat_placeholder = st.empty()
+    with chat_placeholder:
+        prompt = st.chat_input("Ask about diabetes prevention, nutrition, or exercise...")
     
-    with col1:
-        if st.button("Get Diet Recommendations", help="Get personalized diet suggestions based on your health profile"):
-            prompt = "Provide specific dietary recommendations for diabetes prevention"
-            if health_data_exists:
-                prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            st.rerun()
-    
-    with col2:
-        if st.button("Exercise Plan", help="Get a personalized exercise plan"):
-            prompt = "Suggest an appropriate exercise routine"
-            if health_data_exists:
-                activity_level = "active" if st.session_state.health_data.get('PhysActivity') == 'Yes' else "sedentary"
-                prompt += f" for someone who is currently {activity_level}"
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            st.rerun()
-    
-    with col3:
-        if st.button("Risk Explanation", help="Understand your diabetes risk factors"):
-            if health_data_exists:
-                prompt = f"Explain my diabetes risk of {st.session_state.health_data.get('risk')} and what factors contribute to it"
-            else:
-                prompt = "What are the main risk factors for diabetes?"
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            st.rerun()
+    if prompt:
+        process_user_input(prompt)
+        st.rerun()
