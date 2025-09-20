@@ -1,6 +1,8 @@
 import streamlit as st
 import torch
 import torch.nn as nn
+import pandas as pd
+import numpy as np
 
 # -----------------------------
 # Model Definition
@@ -64,13 +66,24 @@ with st.sidebar:
     st.metric("High Risk Patients", "27")
     st.metric("Avg HbA1c", "6.8%")
 
-
 # -----------------------------
-# Normalization Helper
+# Normalization Helper (Updated to match training preprocessing)
 # -----------------------------
-def normalize(value, min_val, max_val):
-    return (value - min_val) / (max_val - min_val) if max_val > min_val else 0
+# These min/max values should match what was used during training
+# If you have the exact values from your dataset, replace these
+NORMALIZATION_PARAMS = {
+    "BMI": {"min": 12.0, "max": 98.0},  # Example values - replace with actuals from your dataset
+    "PhysHlth": {"min": 0.0, "max": 30.0},
+    "MentHlth": {"min": 0.0, "max": 30.0}
+}
 
+def normalize_feature(value, feature_name):
+    """Normalize feature using the same parameters as during training"""
+    if feature_name in NORMALIZATION_PARAMS:
+        min_val = NORMALIZATION_PARAMS[feature_name]["min"]
+        max_val = NORMALIZATION_PARAMS[feature_name]["max"]
+        return (value - min_val) / (max_val - min_val) if max_val > min_val else 0
+    return value
 
 # -----------------------------
 # Health Analysis Page
@@ -101,52 +114,59 @@ if page == "Health Analysis":
 
     col1, col2, col3 = st.columns(3)
 
-    # Medical History
+    # Medical History - Matching BRFSS2015 dataset
     with col1:
-        HighBP = st.radio("High Blood Pressure?", [0, 1])
-        HighChol = st.radio("High Cholesterol?", [0, 1])
-        Stroke = st.radio("History of Stroke?", [0, 1])
-        HeartDisease = st.radio("History of Heart Disease?", [0, 1])
-        DiffWalk = st.radio("Difficulty Walking?", [0, 1])
+        HighBP = st.radio("High Blood Pressure?", [0, 1], help="0 = no, 1 = yes")
+        HighChol = st.radio("High Cholesterol?", [0, 1], help="0 = no, 1 = yes")
+        CholCheck = st.radio("Cholesterol Check in last 5 years?", [0, 1], help="0 = no, 1 = yes")
+        Stroke = st.radio("History of Stroke?", [0, 1], help="0 = no, 1 = yes")
+        HeartDiseaseorAttack = st.radio("History of Heart Disease or Attack?", [0, 1], help="0 = no, 1 = yes")
 
-    # Lifestyle
+    # Lifestyle - Matching BRFSS2015 dataset
     with col2:
-        Smoker = st.radio("Smoked 100+ cigarettes?", [0, 1])
-        PhysActivity = st.radio("Physical Activity past 30 days?", [0, 1])
-        Fruits = st.radio("Eat Fruits daily?", [0, 1])
-        Veggies = st.radio("Eat Vegetables daily?", [0, 1])
-        HvyAlcoholConsump = st.radio("Heavy Alcohol Consumption?", [0, 1])
+        Smoker = st.radio("Smoked 100+ cigarettes?", [0, 1], help="0 = no, 1 = yes")
+        PhysActivity = st.radio("Physical Activity past 30 days?", [0, 1], help="0 = no, 1 = yes")
+        Fruits = st.radio("Eat Fruits daily?", [0, 1], help="0 = no, 1 = yes")
+        Veggies = st.radio("Eat Vegetables daily?", [0, 1], help="0 = no, 1 = yes")
+        HvyAlcoholConsump = st.radio("Heavy Alcohol Consumption?", [0, 1], 
+                                    help="Heavy drinkers (adult men having more than 14 drinks per week and adult women having more than 7 drinks per week)")
         GenHlth = st.slider("General Health (1=Excellent, 5=Poor)", 1, 5, 3)
 
-    # Demographics
+    # Demographics - Matching BRFSS2015 dataset
     with col3:
         Sex = 1 if gender == "Male" else 0
         Age = st.slider("Age category (1=18-24, 13=80+)", 1, 13, 5)
         Education = st.slider("Education (1=Never attended, 6=College graduate)", 1, 6, 4)
         Income = st.slider("Income (1=<$10k, 8=$75k+)", 1, 8, 4)
-        NoDocbcCost = st.radio("Skipped doctor due to cost?", [0, 1])
-        AnyHealthcare = st.radio("Healthcare Coverage?", [0, 1])
-        CholCheck = st.radio("Cholesterol Check in last 5 years?", [0, 1])   # <-- Added back
+        NoDocbcCost = st.radio("Skipped doctor due to cost?", [0, 1], help="0 = no, 1 = yes")
+        AnyHealthcare = st.radio("Healthcare Coverage?", [0, 1], help="0 = no, 1 = yes")
+        DiffWalk = st.radio("Difficulty Walking?", [0, 1], help="0 = no, 1 = yes")
 
-
-    # BMI, Physical & Mental Health
+    # Health Metrics - Matching BRFSS2015 dataset
     st.subheader("Health Metrics")
     col4, col5, col6 = st.columns(3)
     with col4:
-        BMI = normalize(bmi, 10, 50)
+        # BMI will be normalized using the same method as during training
+        BMI = bmi
     with col5:
         PhysHlth = st.slider("Physical Health (days unwell past 30)", 0, 30, 5)
-        PhysHlth = normalize(PhysHlth, 0, 30)
     with col6:
         MentHlth = st.slider("Mental Health (days unwell past 30)", 0, 30, 5)
-        MentHlth = normalize(MentHlth, 0, 30)
 
-    # Preprocess inputs
+    # Preprocess inputs - Matching BRFSS2015 dataset order
+    # Note: Make sure this order matches exactly with your training data
     features = [
-        HighBP, HighChol, BMI, Smoker, Stroke, HeartDisease, PhysActivity,
-        Fruits, Veggies, HvyAlcoholConsump, AnyHealthcare, NoDocbcCost,
-        GenHlth, MentHlth, PhysHlth, DiffWalk, Sex, Age, Education, Income
+        HighBP, HighChol, CholCheck, 
+        normalize_feature(BMI, "BMI"), 
+        Smoker, Stroke, 
+        HeartDiseaseorAttack, PhysActivity, Fruits, Veggies, 
+        HvyAlcoholConsump, AnyHealthcare, NoDocbcCost, GenHlth, 
+        normalize_feature(MentHlth, "MentHlth"), 
+        normalize_feature(PhysHlth, "PhysHlth"), 
+        DiffWalk, Sex, Age, Education, Income
     ]
+    
+    # Convert to tensor
     X = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
 
     # Prediction
@@ -172,10 +192,58 @@ if page == "Health Analysis":
         st.write(f"- No Diabetes: {(1-risk):.2%}")
         st.write(f"- Diabetes: {risk:.2%}")
 
+        # Additional insights based on risk factors
+        if HighBP == 1:
+            st.write("💡 **Note:** High blood pressure is a significant risk factor for diabetes.")
+        if BMI >= 30:
+            st.write("💡 **Note:** A BMI of 30 or higher increases diabetes risk.")
+        if PhysActivity == 0:
+            st.write("💡 **Note:** Regular physical activity can help reduce diabetes risk.")
+
 
 # -----------------------------
 # AI Health Assistant Page
 # -----------------------------
 elif page == "AI Health Assistant":
     st.markdown("## AI Health Assistant")
-    st.write("This page will provide personalized AI-driven health advice and insights.")
+    
+    st.info("This assistant provides personalized health recommendations based on your risk factors.")
+    
+    # Simple risk assessment
+    st.subheader("Quick Health Assessment")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        family_history = st.radio("Family history of diabetes?", ["No", "Yes"])
+        activity_level = st.radio("Physical activity level?", ["Sedentary", "Moderate", "Active"])
+        diet_quality = st.radio("How would you rate your diet?", ["Poor", "Average", "Good"])
+    
+    with col2:
+        sleep_hours = st.slider("Average hours of sleep per night", 3, 12, 7)
+        stress_level = st.slider("Stress level (1=Low, 10=High)", 1, 10, 5)
+        
+    if st.button("Get Health Recommendations"):
+        # Simple logic to generate recommendations
+        recommendations = []
+        
+        if activity_level == "Sedentary":
+            recommendations.append("🏃‍♂️ **Increase physical activity**: Aim for at least 30 minutes of moderate exercise most days.")
+        
+        if diet_quality in ["Poor", "Average"]:
+            recommendations.append("🥗 **Improve diet**: Focus on whole foods, fruits, vegetables, and limit processed foods.")
+            
+        if sleep_hours < 7:
+            recommendations.append("😴 **Prioritize sleep**: Aim for 7-9 hours of quality sleep per night.")
+            
+        if stress_level > 7:
+            recommendations.append("🧘‍♂️ **Manage stress**: Try meditation, deep breathing, or other relaxation techniques.")
+            
+        if family_history == "Yes":
+            recommendations.append("👨‍👩‍👧‍👦 **Family history**: Be extra vigilant about regular check-ups due to your family history.")
+            
+        if recommendations:
+            st.success("### Personalized Recommendations")
+            for rec in recommendations:
+                st.write(rec)
+        else:
+            st.info("You're doing great! Keep up your healthy habits.")
