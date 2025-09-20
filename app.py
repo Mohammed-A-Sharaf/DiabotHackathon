@@ -394,6 +394,25 @@ elif page == "AI Health Assistant":
             {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me."}
         ]
     
+    # Initialize language selection in session state
+    if "language" not in st.session_state:
+        st.session_state.language = "English"
+    
+    # Language selection dropdown
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.session_state.language = st.selectbox(
+            "Select Chat Language",
+            ["English", "Spanish", "French", "German", "Chinese", "Hindi", "Arabic", "Portuguese", "Russian", "Japanese"],
+            index=0
+        )
+    with col2:
+        if st.button("Clear Chat", use_container_width=True):
+            st.session_state.messages = [
+                {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me."}
+            ]
+            st.rerun()
+    
     # Check if health data exists in session state
     health_data_exists = "health_data" in st.session_state
     
@@ -430,10 +449,13 @@ elif page == "AI Health Assistant":
             if bedrock_client is None:
                 return "Error connecting to AI service. Please try again later."
             
-            # Format the prompt for Llama 3
+            # Format the prompt for Llama 3 with language instruction
+            language_instruction = f"Please respond in {st.session_state.language}." if st.session_state.language != "English" else ""
+            
             formatted_prompt = f"""
 <|begin_of_text|><|start_header_id|>user<|end_header_id|>
 {prompt}
+{language_instruction}
 <|eot_id|>
 <|start_header_id|>assistant<|end_header_id|>
 """
@@ -462,7 +484,11 @@ elif page == "AI Health Assistant":
             return f"Error: {str(e)}"
     
     # Chat input
-    if prompt := st.chat_input("Ask about diabetes prevention, nutrition, or exercise..."):
+    chat_placeholder = st.empty()
+    with chat_placeholder:
+        prompt = st.chat_input("Ask about diabetes prevention, nutrition, or exercise...")
+    
+    if prompt:
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
         
@@ -506,6 +532,10 @@ User question: {prompt}
 
 Please provide a helpful, concise response focused on diabetes prevention and management.
 """
+                
+                # Add language instruction if not English
+                if st.session_state.language != "English":
+                    full_prompt += f"\n\nPlease respond in {st.session_state.language}."
                 
                 full_response = invoke_llama(full_prompt)
                 st.markdown(full_response)
