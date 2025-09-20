@@ -67,11 +67,10 @@ with st.sidebar:
     st.metric("Avg HbA1c", "6.8%")
 
 # -----------------------------
-# Normalization Helper (Updated to match training preprocessing)
+# Normalization Helper
 # -----------------------------
-# These min/max values should match what was used during training
 NORMALIZATION_PARAMS = {
-    "BMI": {"min": 12.0, "max": 98.0},  # Replace with actual values from your dataset
+    "BMI": {"min": 12.0, "max": 98.0},
     "PhysHlth": {"min": 0.0, "max": 30.0},
     "MentHlth": {"min": 0.0, "max": 30.0}
 }
@@ -84,7 +83,6 @@ def normalize_feature(value, feature_name):
         return (value - min_val) / (max_val - min_val) if max_val > min_val else 0
     return value
 
-# Helper function to convert Yes/No to 1/0
 def yes_no_to_binary(value):
     return 1 if value == "Yes" else 0
 
@@ -94,7 +92,7 @@ def yes_no_to_binary(value):
 if page == "Health Analysis":
     st.markdown("## Patient Health Analysis & Risk Prediction")
 
-    # Patient info (entered manually)
+    # Patient info
     st.subheader("Patient Information")
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -117,46 +115,54 @@ if page == "Health Analysis":
 
     col1, col2, col3 = st.columns(3)
 
-    # Medical History - Updated to show Yes/No but convert to 1/0
+    # Medical History
     with col1:
-        HighBP = st.radio("High Blood Pressure?", ["No", "Yes"], help="0 = no, 1 = yes")
-        HighChol = st.radio("High Cholesterol?", ["No", "Yes"], help="0 = no, 1 = yes")
-        CholCheck = st.radio("Cholesterol Check in last 5 years?", ["No", "Yes"], help="0 = no, 1 = yes")
-        Stroke = st.radio("History of Stroke?", ["No", "Yes"], help="0 = no, 1 = yes")
-        HeartDiseaseorAttack = st.radio("History of Heart Disease or Attack?", ["No", "Yes"], help="0 = no, 1 = yes")
+        HighBP = st.radio("High Blood Pressure?", ["No", "Yes"])
+        HighChol = st.radio("High Cholesterol?", ["No", "Yes"])
+        CholCheck = st.radio("Cholesterol Check in last 5 years?", ["No", "Yes"])
+        Stroke = st.radio("History of Stroke?", ["No", "Yes"])
+        HeartDiseaseorAttack = st.radio("History of Heart Disease or Attack?", ["No", "Yes"])
 
-    # Lifestyle - Updated to show Yes/No but convert to 1/0
+    # Lifestyle
     with col2:
-        Smoker = st.radio("Smoked 100+ cigarettes?", ["No", "Yes"], help="0 = no, 1 = yes")
-        PhysActivity = st.radio("Physical Activity past 30 days?", ["No", "Yes"], help="0 = no, 1 = yes")
-        Fruits = st.radio("Eat Fruits daily?", ["No", "Yes"], help="0 = no, 1 = yes")
-        Veggies = st.radio("Eat Vegetables daily?", ["No", "Yes"], help="0 = no, 1 = yes")
-        HvyAlcoholConsump = st.radio("Heavy Alcohol Consumption?", ["No", "Yes"], 
-                                    help="Heavy drinkers (adult men having more than 14 drinks per week and adult women having more than 7 drinks per week)")
+        Smoker = st.radio("Smoked 100+ cigarettes?", ["No", "Yes"])
+        PhysActivity = st.radio("Physical Activity past 30 days?", ["No", "Yes"])
+        Fruits = st.radio("Eat Fruits daily?", ["No", "Yes"])
+        Veggies = st.radio("Eat Vegetables daily?", ["No", "Yes"])
+        HvyAlcoholConsump = st.radio("Heavy Alcohol Consumption?", ["No", "Yes"])
         GenHlth = st.slider("General Health (1=Excellent, 5=Poor)", 1, 5, 3)
 
-    # Demographics - Updated to show Yes/No but convert to 1/0
+    # Demographics
     with col3:
         Sex = 1 if gender == "Male" else 0
-        Age = st.slider("Age category (1=18-24, 13=80+)", 1, 13, 5)
+        
+        # Age category with better description
+        st.markdown("**Age Category**")
+        st.caption("1=18-24, 2=25-29, 3=30-34, 4=35-39, 5=40-44, 6=45-49, 7=50-54, 8=55-59, 9=60-64, 10=65-69, 11=70-74, 12=75-79, 13=80+")
+        Age = st.slider("", 1, 13, 5, label_visibility="collapsed")
+        
         Education = st.slider("Education (1=Never attended, 6=College graduate)", 1, 6, 4)
-        Income = st.slider("Income (1=<$10k, 8=$75k+)", 1, 8, 4)
-        NoDocbcCost = st.radio("Skipped doctor due to cost?", ["No", "Yes"], help="0 = no, 1 = yes")
-        AnyHealthcare = st.radio("Healthcare Coverage?", ["No", "Yes"], help="0 = no, 1 = yes")
-        DiffWalk = st.radio("Difficulty Walking?", ["No", "Yes"], help="0 = no, 1 = yes")
+        
+        # Income with better description
+        st.markdown("**Income Category**")
+        st.caption("1=<$10k, 2=$10k-15k, 3=$15k-20k, 4=$20k-25k, 5=$25k-35k, 6=$35k-50k, 7=$50k-75k, 8=$75k+")
+        Income = st.slider("", 1, 8, 4, label_visibility="collapsed")
+        
+        NoDocbcCost = st.radio("Skipped doctor due to cost?", ["No", "Yes"])
+        AnyHealthcare = st.radio("Healthcare Coverage?", ["No", "Yes"])
+        DiffWalk = st.radio("Difficulty Walking?", ["No", "Yes"])
 
     # Health Metrics
     st.subheader("Health Metrics")
     col4, col5, col6 = st.columns(3)
     with col4:
-        # BMI will be normalized using the same method as during training
         BMI = bmi
     with col5:
         PhysHlth = st.slider("Physical Health (days unwell past 30)", 0, 30, 5)
     with col6:
         MentHlth = st.slider("Mental Health (days unwell past 30)", 0, 30, 5)
 
-    # Preprocess inputs - Convert Yes/No to 1/0 and normalize
+    # Preprocess inputs
     features = [
         yes_no_to_binary(HighBP), 
         yes_no_to_binary(HighChol), 
@@ -207,7 +213,7 @@ if page == "Health Analysis":
         st.write(f"- No Diabetes: {(1-risk):.2%}")
         st.write(f"- Diabetes: {risk:.2%}")
 
-        # Additional insights based on risk factors
+        # Additional insights
         if HighBP == "Yes":
             st.write("💡 **Note:** High blood pressure is a significant risk factor for diabetes.")
         if BMI >= 30:
@@ -238,7 +244,6 @@ elif page == "AI Health Assistant":
         stress_level = st.slider("Stress level (1=Low, 10=High)", 1, 10, 5)
         
     if st.button("Get Health Recommendations"):
-        # Simple logic to generate recommendations
         recommendations = []
         
         if activity_level == "Sedentary":
