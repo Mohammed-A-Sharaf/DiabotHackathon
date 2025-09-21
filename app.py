@@ -60,9 +60,8 @@ st.set_page_config(
 # Sidebar navigation
 with st.sidebar:
     # Add logo to the sidebar
-    st.image("DIaBot Logo/logo.png", width=200)
-    st.markdown("---")
-    
+    st.image("DIaBot Logo/logo.png", width=180)
+
     st.title("DiaBot AI")
     st.markdown("---")
     page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant", "Health Education"])
