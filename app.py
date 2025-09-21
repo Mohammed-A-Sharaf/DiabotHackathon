@@ -360,16 +360,29 @@ if page == "Health Analysis":
     st.subheader("Patient Information")
     col1, col2, col3 = st.columns(3)
     with col1:
-        patient_name = st.text_input("Patient Name", "John Doe")
-        age = st.number_input("Age", min_value=1, max_value=120, value=52)
-        gender = st.radio("Gender", ["Male", "Female"])
+        patient_name = st.text_input("Patient Name", "")
+        age = st.number_input("Age", min_value=1, max_value=120, value=None, placeholder="Enter age")
+        gender = st.radio("Gender", ["Male", "Female"], index=None)
     with col2:
-        height = st.number_input("Height (cm)", min_value=50, max_value=250, value=175)
-        weight = st.number_input("Weight (kg)", min_value=10, max_value=300, value=82)
-        bmi = round(weight / ((height / 100) ** 2), 1)
-        st.write(f"**BMI:** {bmi}")
+        height = st.number_input("Height (cm)", min_value=50, max_value=250, value=None, placeholder="Enter height")
+        weight = st.number_input("Weight (kg)", min_value=10, max_value=300, value=None, placeholder="Enter weight")
+        if height and weight:
+            bmi = round(weight / ((height / 100) ** 2), 1)
+            st.write(f"**BMI:** {bmi}")
+        else:
+            bmi = None
+            st.write("**BMI:** Please enter height and weight")
     with col3:
-        last_checkup = st.date_input("Last Checkup")
+        last_checkup = st.date_input("Last Checkup", value=None)
+
+    # Automatically calculate age category based on age
+    if age is not None:
+        age_category = get_age_category(age)
+        age_category_display = age_categories.get(age_category, "Unknown")
+        st.info(f"**Age Category:** {age_category} - {age_category_display}")
+    else:
+        age_category = None
+        st.info("**Age Category:** Please enter age")
 
     st.markdown("---")
     st.subheader("Health Information")
@@ -381,101 +394,145 @@ if page == "Health Analysis":
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            Sex = 1 if gender == "Male" else 0
-            Age = st.selectbox(
-                "Age Category",
-                options=list(age_categories.keys()),
-                format_func=lambda x: f"{x} - {age_categories[x]}",
-                index=4
+            Sex = 1 if gender == "Male" else 0 if gender == "Female" else None
+            
+            Education = st.selectbox(
+                "Education Level",
+                options=[None] + list(range(1, 7)),
+                format_func=lambda x: f"{x} - {['Never attended', 'Elementary', 'Some high school', 'High school graduate', 'Some college', 'College graduate'][x-1]}" if x is not None else "Select education level",
+                index=0
             )
             
         with col2:
-            Education = st.slider("Education Level (1=Never attended, 6=College graduate)", 1, 6, 4)
             Income = st.selectbox(
                 "Income Category",
-                options=list(income_categories.keys()),
-                format_func=lambda x: f"{x} - {income_categories[x]}",
-                index=3
+                options=[None] + list(income_categories.keys()),
+                format_func=lambda x: f"{x} - {income_categories[x]}" if x is not None else "Select income category",
+                index=0
             )
             
         with col3:
-            AnyHealthcare = st.radio("Healthcare Coverage?", ["No", "Yes"])
-            NoDocbcCost = st.radio("Skipped doctor due to cost?", ["No", "Yes"])
+            AnyHealthcare = st.radio("Healthcare Coverage?", ["No", "Yes"], index=None)
+            NoDocbcCost = st.radio("Skipped doctor due to cost?", ["No", "Yes"], index=None)
 
     with tab2:
         st.markdown("### Medical History")
         col1, col2 = st.columns(2)
         
         with col1:
-            HighBP = st.radio("High Blood Pressure?", ["No", "Yes"])
-            HighChol = st.radio("High Cholesterol?", ["No", "Yes"])
-            CholCheck = st.radio("Cholesterol Check in last 5 years?", ["No", "Yes"])
+            HighBP = st.radio("High Blood Pressure?", ["No", "Yes"], index=None)
+            HighChol = st.radio("High Cholesterol?", ["No", "Yes"], index=None)
+            CholCheck = st.radio("Cholesterol Check in last 5 years?", ["No", "Yes"], index=None)
             
         with col2:
-            Stroke = st.radio("History of Stroke?", ["No", "Yes"])
-            HeartDiseaseorAttack = st.radio("History of Heart Disease or Attack?", ["No", "Yes"])
-            DiffWalk = st.radio("Difficulty Walking?", ["No", "Yes"])
+            Stroke = st.radio("History of Stroke?", ["No", "Yes"], index=None)
+            HeartDiseaseorAttack = st.radio("History of Heart Disease or Attack?", ["No", "Yes"], index=None)
+            DiffWalk = st.radio("Difficulty Walking?", ["No", "Yes"], index=None)
 
     with tab3:
         st.markdown("### Lifestyle Factors")
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            Smoker = st.radio("Smoked 100+ cigarettes?", ["No", "Yes"])
-            HvyAlcoholConsump = st.radio("Heavy Alcohol Consumption?", ["No", "Yes"])
+            Smoker = st.radio("Smoked 100+ cigarettes?", ["No", "Yes"], index=None)
+            HvyAlcoholConsump = st.radio("Heavy Alcohol Consumption?", ["No", "Yes"], index=None)
             
         with col2:
-            PhysActivity = st.radio("Physical Activity past 30 days?", ["No", "Yes"])
-            Fruits = st.radio("Eat Fruits daily?", ["No", "Yes"])
+            PhysActivity = st.radio("Physical Activity past 30 days?", ["No", "Yes"], index=None)
+            Fruits = st.radio("Eat Fruits daily?", ["No", "Yes"], index=None)
             
         with col3:
-            Veggies = st.radio("Eat Vegetables daily?", ["No", "Yes"])
-            GenHlth = st.slider("General Health (1=Excellent, 5=Poor)", 1, 5, 3)
+            Veggies = st.radio("Eat Vegetables daily?", ["No", "Yes"], index=None)
+            GenHlth = st.selectbox(
+                "General Health (1=Excellent, 5=Poor)",
+                options=[None] + list(range(1, 6)),
+                format_func=lambda x: f"{x} - {['Excellent', 'Very Good', 'Good', 'Fair', 'Poor'][x-1]}" if x is not None else "Select general health",
+                index=0
+            )
 
     with tab4:
         st.markdown("### Health Metrics")
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            BMI = bmi
-            st.info(f"**BMI:** {bmi} (calculated from height and weight)")
+            if bmi is not None:
+                BMI = bmi
+                st.info(f"**BMI:** {bmi} (calculated from height and weight)")
+            else:
+                BMI = None
+                st.info("**BMI:** Please enter height and weight")
             
         with col2:
-            PhysHlth = st.slider("Physical Health (days unwell past 30)", 0, 30, 5)
+            PhysHlth = st.slider("Physical Health (days unwell past 30)", 0, 30, 0)
             
         with col3:
-            MentHlth = st.slider("Mental Health (days unwell past 30)", 0, 30, 5)
+            MentHlth = st.slider("Mental Health (days unwell past 30)", 0, 30, 0)
 
-    # Preprocess inputs
-    features = [
-        yes_no_to_binary(HighBP), 
-        yes_no_to_binary(HighChol), 
-        yes_no_to_binary(CholCheck), 
-        normalize_feature(BMI, "BMI"), 
-        yes_no_to_binary(Smoker), 
-        yes_no_to_binary(Stroke), 
-        yes_no_to_binary(HeartDiseaseorAttack), 
-        yes_no_to_binary(PhysActivity), 
-        yes_no_to_binary(Fruits), 
-        yes_no_to_binary(Veggies), 
-        yes_no_to_binary(HvyAlcoholConsump), 
-        yes_no_to_binary(AnyHealthcare), 
-        yes_no_to_binary(NoDocbcCost), 
-        GenHlth, 
-        normalize_feature(MentHlth, "MentHlth"), 
-        normalize_feature(PhysHlth, "PhysHlth"), 
-        yes_no_to_binary(DiffWalk), 
-        Sex, 
-        Age, 
-        Education, 
-        Income
-    ]
-    
-    X = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
+    # Validation function
+    def validate_inputs():
+        required_fields = {
+            "Age": age is not None,
+            "Gender": gender is not None,
+            "Height": height is not None,
+            "Weight": weight is not None,
+            "Education": Education is not None,
+            "Income": Income is not None,
+            "AnyHealthcare": AnyHealthcare is not None,
+            "NoDocbcCost": NoDocbcCost is not None,
+            "HighBP": HighBP is not None,
+            "HighChol": HighChol is not None,
+            "CholCheck": CholCheck is not None,
+            "Stroke": Stroke is not None,
+            "HeartDiseaseorAttack": HeartDiseaseorAttack is not None,
+            "DiffWalk": DiffWalk is not None,
+            "Smoker": Smoker is not None,
+            "HvyAlcoholConsump": HvyAlcoholConsump is not None,
+            "PhysActivity": PhysActivity is not None,
+            "Fruits": Fruits is not None,
+            "Veggies": Veggies is not None,
+            "GenHlth": GenHlth is not None
+        }
+        
+        missing_fields = [field for field, filled in required_fields.items() if not filled]
+        
+        if missing_fields:
+            st.error(f"Please fill in all required fields: {', '.join(missing_fields)}")
+            return False
+        return True
 
     predict_btn = st.button("Predict Risk", type="primary", use_container_width=True)
 
     if predict_btn:
+        if not validate_inputs():
+            st.stop()
+            
+        # Preprocess inputs
+        features = [
+            yes_no_to_binary(HighBP), 
+            yes_no_to_binary(HighChol), 
+            yes_no_to_binary(CholCheck), 
+            normalize_feature(BMI, "BMI"), 
+            yes_no_to_binary(Smoker), 
+            yes_no_to_binary(Stroke), 
+            yes_no_to_binary(HeartDiseaseorAttack), 
+            yes_no_to_binary(PhysActivity), 
+            yes_no_to_binary(Fruits), 
+            yes_no_to_binary(Veggies), 
+            yes_no_to_binary(HvyAlcoholConsump), 
+            yes_no_to_binary(AnyHealthcare), 
+            yes_no_to_binary(NoDocbcCost), 
+            GenHlth, 
+            normalize_feature(MentHlth, "MentHlth"), 
+            normalize_feature(PhysHlth, "PhysHlth"), 
+            yes_no_to_binary(DiffWalk), 
+            Sex, 
+            age_category,  # Use the automatically calculated age category
+            Education, 
+            Income
+        ]
+        
+        X = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
+
         with torch.no_grad():
             outputs = model(X)
             probabilities = torch.softmax(outputs, dim=1)
@@ -596,8 +653,8 @@ if page == "Health Analysis":
             
             with col2:
                 st.write("**Risk by Period:**")
-                for i, risk in enumerate(future_risks):
-                    st.write(f"{month_labels[i]}: {risk:.2%}")
+                for i, risk_val in enumerate(future_risks):
+                    st.write(f"{month_labels[i]}: {risk_val:.2%}")
             
             st.subheader("Future Risk Analysis")
             
