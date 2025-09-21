@@ -60,7 +60,7 @@ st.set_page_config(
 # Sidebar navigation
 with st.sidebar:
     # Add logo to the sidebar
-    st.image("DIaBot Logo/logo.png", width=180)
+    st.image("DIaBot Logo/logo.png", width=100)
 
     st.title("DiaBot AI")
     st.markdown("---")
