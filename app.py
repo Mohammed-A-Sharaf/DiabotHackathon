@@ -694,7 +694,7 @@ elif page == "AI Health Assistant":
         st.markdown('</div>', unsafe_allow_html=True)
     
     # Function to invoke Bedrock with Llama 3
-    def invoke_llama(prompt, max_tokens=500, temperature=0.5):
+    def invoke_llama(prompt, max_tokens=650, temperature=0.5):
         try:
             bedrock_client = get_bedrock_client()
             if bedrock_client is None:
@@ -721,7 +721,7 @@ elif page == "AI Health Assistant":
             
             # Send the request to the Bedrock model
             response = bedrock_client.invoke_model(
-                modelId='meta.llama3-8b-instruct-v1:0',
+                modelId='meta.llama3-70b-instruct-v1:0',
                 body=body,
                 contentType='application/json',
                 accept='application/json'
