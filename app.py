@@ -586,7 +586,7 @@ elif page == "AI Health Assistant":
     with col1:
         st.session_state.language = st.selectbox(
             "Select Chat Language",
-            ["English", "Malay", "Chinese", "Tamil"],
+            ["English", "Malay", "Chinese", "Tamil","Arabic"],
             index=0
         )
     with col2:
