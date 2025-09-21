@@ -297,17 +297,17 @@ with st.sidebar:
         st.session_state.page = "Health Analysis"
     
     # Navigation buttons - stacked vertically
-    if st.button("Health Analysis", use_container_width=True, 
+    if st.button("🏥 Health Analysis", use_container_width=True, 
                 type="primary" if st.session_state.page == "Health Analysis" else "secondary"):
         st.session_state.page = "Health Analysis"
         st.rerun()
     
-    if st.button("AI Health Assistant", use_container_width=True,
+    if st.button("🤖 AI Health Assistant", use_container_width=True,
                 type="primary" if st.session_state.page == "AI Health Assistant" else "secondary"):
         st.session_state.page = "AI Health Assistant"
         st.rerun()
     
-    if st.button("Health Education", use_container_width=True,
+    if st.button("📚 Health Education", use_container_width=True,
                 type="primary" if st.session_state.page == "Health Education" else "secondary"):
         st.session_state.page = "Health Education"
         st.rerun()
@@ -326,9 +326,16 @@ with st.sidebar:
     st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
     st.markdown('<div class="sidebar-title">Emergency Contacts (Malaysia)</div>', unsafe_allow_html=True)
     st.markdown('**If you\'re experiencing a medical emergency, call 999 immediately.**')
-    st.markdown('- Health Advisory: 03-8881 0200')
-    st.markdown('- Poison Control: 04-657 0099')
-    st.markdown('- Mental Health: 03-7956 8145')
+    
+    # Use HTML to prevent line breaks in phone numbers
+    st.markdown("""
+    <div style="margin-top: 10px;">
+        <div>Health Advisory: <span style="white-space: nowrap;">03-8881 0200</span></div>
+        <div>Poison Control: <span style="white-space: nowrap;">04-657 0099</span></div>
+        <div>Mental Health: <span style="white-space: nowrap;">03-7956 8145</span></div>
+    </div>
+    """, unsafe_allow_html=True)
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
 # Set page based on session state
