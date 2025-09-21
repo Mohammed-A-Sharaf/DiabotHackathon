@@ -1198,13 +1198,55 @@ Original question: {prompt}
 
 Please respond in {st.session_state.language} only.
 """
-                full_response = invoke_llama(retry_prompt)
+                full_response = invoke_llama(full_prompt)
+            
+            # Post-process response to remove any mixed language content
+            if st.session_state.language != "English":
+                # Simple check for English words in non-English responses
+                # This is a basic approach - for production, you might want a more sophisticated solution
+                import re
+                # Common English words that might appear
+                english_words = r'\b(if|the|and|or|but|is|are|was|were|to|for|of|in|on|at|by|with|about|against|between|into|through|during|before|after|above|below|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now)\b'
                 
-                # Display response with RTL if Arabic is the current language
-                if st.session_state.language == "Arabic":
-                    st.markdown(f'<div class="rtl-text">{full_response}</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown(full_response)
+                # Check if there are English words in the response
+                english_matches = re.findall(english_words, full_response, re.IGNORECASE)
+                if english_matches and len(english_matches) > 3:  # More than 3 English words suggests mixed language
+                    # Request a cleaner response
+                    retry_prompt = f"""
+The previous response contained mixed languages. Please provide a response in {st.session_state.language} ONLY, without any English or other language words.
+
+Original question: {prompt}
+
+Please respond in {st.session_state.language} only.
+"""
+                full_response = invoke_llama(full_prompt)
+            
+            # Post-process response to remove any mixed language content
+            if st.session_state.language != "English":
+                # Simple check for English words in non-English responses
+                # This is a basic approach - for production, you might want a more sophisticated solution
+                import re
+                # Common English words that might appear
+                english_words = r'\b(if|the|and|or|but|is|are|was|were|to|for|of|in|on|at|by|with|about|against|between|into|through|during|before|after|above|below|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now)\b'
+                
+                # Check if there are English words in the response
+                english_matches = re.findall(english_words, full_response, re.IGNORECASE)
+                if english_matches and len(english_matches) > 3:  # More than 3 English words suggests mixed language
+                    # Request a cleaner response
+                    retry_prompt = f"""
+The previous response contained mixed languages. Please provide a response in {st.session_state.language} ONLY, without any English or other language words.
+
+Original question: {prompt}
+
+Please respond in {st.session_state.language} only.
+"""
+                    full_response = invoke_llama(retry_prompt)
+            
+            # Display response with RTL if Arabic is the current language
+            if st.session_state.language == "Arabic":
+                st.markdown(f'<div class="rtl-text">{full_response}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(full_response)
         
         # Add assistant response to chat history with language
         st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
