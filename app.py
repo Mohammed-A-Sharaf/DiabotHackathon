@@ -899,7 +899,7 @@ elif page == "AI Health Assistant":
     if st.session_state.language == "Arabic":
         st.markdown('</div>', unsafe_allow_html=True)
     
-    def invoke_llama(prompt, max_tokens=650, temperature=0.5):
+    def invoke_llama(prompt, max_tokens=800, temperature=0.5):
         try:
             bedrock_client = get_bedrock_client()
             if bedrock_client is None:
