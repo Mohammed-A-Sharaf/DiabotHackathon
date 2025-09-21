@@ -289,15 +289,10 @@ st.set_page_config(
 
 # Sidebar navigation
 with st.sidebar:
-    # Center the logo using HTML with custom styling
-    st.markdown(
-        """
-        <div style="display: flex; justify-content: center; margin-bottom: 20px;">
-            <img src="DIaBot Logo/logo2.png" width="200">
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    # Center the logo using columns
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image("DIaBot Logo/logo2.png", width=200)  # Increased from 150 to 200
     st.markdown("---")
     
     # Initialize page in session state if not exists
