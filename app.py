@@ -289,7 +289,7 @@ st.set_page_config(
 
 # Sidebar navigation
 with st.sidebar:
-    st.image("DIaBot Logo/logo.png", width=200)
+    st.image("DIaBot Logo/logo2.png", width=200)
     st.markdown("---")
     
     # Initialize page in session state if not exists
