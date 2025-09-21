@@ -18,6 +18,62 @@ st.markdown("""
         background-color: #f8f9fa;
     }
     
+        /* Sidebar button styling */
+    .sidebar-button {
+        display: block;
+        width: 100%;
+        padding: 12px 16px;
+        margin: 8px 0;
+        background-color: #1e40af;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .sidebar-button:hover {
+        background-color: #1e3a8a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .sidebar-button.active {
+        background-color: #1e3a8a;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        transform: translateY(0);
+    }
+    
+    .sidebar-section {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+    }
+    
+    .sidebar-title {
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+    
+    .sidebar-link {
+        color: #93c5fd;
+        text-decoration: none;
+        display: block;
+        margin: 8px 0;
+        transition: color 0.2s ease;
+    }
+    
+    .sidebar-link:hover {
+        color: white;
+    }
+    
     /* Sidebar styling */
     .css-1d391kg {
         background-color: #1e40af;
@@ -233,25 +289,55 @@ st.set_page_config(
 
 # Sidebar navigation
 with st.sidebar:
-
     st.image("DIaBot Logo/logo.png", width=200)
     st.markdown("---")
     
-    page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant", "Health Education"])
+    # Initialize page in session state if not exists
+    if 'page' not in st.session_state:
+        st.session_state.page = "Health Analysis"
     
+    # Navigation buttons
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("Health", use_container_width=True, 
+                    type="primary" if st.session_state.page == "Health Analysis" else "secondary"):
+            st.session_state.page = "Health Analysis"
+            st.rerun()
+    
+    with col2:
+        if st.button("AI Assistant", use_container_width=True,
+                    type="primary" if st.session_state.page == "AI Health Assistant" else "secondary"):
+            st.session_state.page = "AI Health Assistant"
+            st.rerun()
+    
+    with col3:
+        if st.button("Education", use_container_width=True,
+                    type="primary" if st.session_state.page == "Health Education" else "secondary"):
+            st.session_state.page = "Health Education"
+            st.rerun()
     
     st.markdown("---")
-    st.markdown("### Malaysian Resources")
-    st.markdown("- [Ministry of Health Malaysia](https://www.moh.gov.my/)")
-    st.markdown("- [National Diabetes Institute (NADI)](http://www.nadi.org.my/)")
-    st.markdown("- [Malaysian Diabetes Association](http://www.diabetes.org.my/)")
     
-    st.markdown("---")
-    st.markdown("### Emergency Contacts (Malaysia)")
-    st.markdown("**If you're experiencing a medical emergency, call 999 immediately.**")
-    st.markdown("- Health Advisory: 03-8881 0200")
-    st.markdown("- Poison Control: 04-657 0099")
-    st.markdown("- Mental Health: 03-7956 8145")
+    # Malaysian Resources section
+    st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-title">Malaysian Resources</div>', unsafe_allow_html=True)
+    st.markdown('<a href="https://www.moh.gov.my/" class="sidebar-link" target="_blank">Ministry of Health Malaysia</a>', unsafe_allow_html=True)
+    st.markdown('<a href="http://www.nadi.org.my/" class="sidebar-link" target="_blank">National Diabetes Institute (NADI)</a>', unsafe_allow_html=True)
+    st.markdown('<a href="http://www.diabetes.org.my/" class="sidebar-link" target="_blank">Malaysian Diabetes Association</a>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Emergency Contacts section
+    st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-title">Emergency Contacts (Malaysia)</div>', unsafe_allow_html=True)
+    st.markdown('**If you\'re experiencing a medical emergency, call 999 immediately.**')
+    st.markdown('- Health Advisory: 03-8881 0200')
+    st.markdown('- Poison Control: 04-657 0099')
+    st.markdown('- Mental Health: 03-7956 8145')
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# Set page based on session state
+page = st.session_state.page
 
 # -----------------------------
 # Normalization Helper
