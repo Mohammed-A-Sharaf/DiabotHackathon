@@ -790,4 +790,548 @@ elif page == "AI Health Assistant":
             if st.button("Get Diet Recommendations", help="Get personalized diet suggestions based on your health profile"):
                 prompt = "Provide specific dietary recommendations for diabetes prevention"
                 if health_data_exists:
-                    prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health
+                    prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
+                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+                st.session_state.show_quick_actions = False
+                st.rerun()
+        
+        with col2:
+            if st.button("Exercise Plan", help="Get a personalized exercise plan"):
+                prompt = "Suggest an appropriate exercise routine"
+                if health_data_exists:
+                    activity_level = "active" if st.session_state.health_data.get('PhysActivity') == 'Yes' else "sedentary"
+                    prompt += f" for someone who is currently {activity_level}"
+                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+                st.session_state.show_quick_actions = False
+                st.rerun()
+        
+        with col3:
+            if st.button("Risk Explanation", help="Understand your diabetes risk factors"):
+                if health_data_exists:
+                    prompt = f"Explain my diabetes risk of {st.session_state.health_data.get('risk')} and what factors contribute to it"
+                else:
+                    prompt = "What are the main risk factors for diabetes?"
+                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+                st.session_state.show_quick_actions = False
+                st.rerun()
+    
+    # Display chat messages from history
+    st.markdown("---")
+    st.markdown("### Chat with Health Assistant")
+    
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            # Apply RTL styling only if the message is in Arabic
+            if message.get("language") == "Arabic":
+                st.markdown(f'<div class="rtl-text">{message["content"]}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(message["content"])
+    
+    # Close the Arabic input div if it was opened
+    if st.session_state.language == "Arabic":
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Function to invoke Bedrock with Llama 3
+    def invoke_llama(prompt, max_tokens=650, temperature=0.5):
+        try:
+            bedrock_client = get_bedrock_client()
+            if bedrock_client is None:
+                return "Error connecting to AI service. Please try again later."
+            
+            # Format the prompt for Llama 3 with language instruction
+            language_instruction = f"Please respond in {st.session_state.language}." if st.session_state.language != "English" else ""
+            
+            formatted_prompt = f"""
+<|begin_of_text|><|start_header_id|>user<|end_header_id|>
+{prompt}
+{language_instruction}
+<|eot_id|>
+<|start_header_id|>assistant<|end_header_id|>
+"""
+            
+            # Prepare the request body for Llama 3
+            body = json.dumps({
+                "prompt": formatted_prompt,
+                "max_gen_len": max_tokens,
+                "temperature": temperature,
+                "top_p": 0.9
+            })
+            
+            # Send the request to the Bedrock model
+            response = bedrock_client.invoke_model(
+                modelId='meta.llama3-70b-instruct-v1:0',
+                body=body,
+                contentType='application/json',
+                accept='application/json'
+            )
+            
+            # Parse the response
+            response_body = json.loads(response['body'].read())
+            return response_body.get('generation', 'No response generated')
+            
+        except Exception as e:
+            return f"Error: {str(e)}"
+    
+    # Function to process user input and generate AI response
+    def process_user_input(prompt):
+        # Add user message to chat history with language
+        st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+        
+        # Display user message with RTL if Arabic
+        with st.chat_message("user"):
+            if st.session_state.language == "Arabic":
+                st.markdown(f'<div class="rtl-text">{prompt}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(prompt)
+        
+        # Get AI response
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                # Create a context-aware prompt for the health assistant
+                health_context = ""
+                
+                if health_data_exists:
+                    health_data = st.session_state.health_data
+                    health_context = f"""
+Patient Health Context:
+- Age: {health_data.get('age', 'Not provided')}
+- Gender: {health_data.get('gender', 'Not provided')}
+- BMI: {health_data.get('bmi', 'Not provided')}
+- Diabetes Risk: {health_data.get('risk', 'Not calculated')}
+- Blood Pressure: {'High' if health_data.get('HighBP') == 'Yes' else 'Normal'}
+- Cholesterol: {'High' if health_data.get('HighChol') == 'Yes' else 'Normal'}
+- Physical Activity: {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}
+- Diet: Fruits: {'Yes' if health_data.get('Fruits') == 'Yes' else 'No'}, Vegetables: {'Yes' if health_data.get('Veggies') == 'Yes' else 'No'}
+- General Health: {health_data.get('GenHlth', 'Not provided')}/5
+- Smoking: {'Yes' if health_data.get('Smoker') == 'Yes' else 'No'}
+- Alcohol: {'Heavy' if health_data.get('HvyAlcoholConsump') == 'Yes' else 'Moderate/None'}
+
+"""
+                
+                # Stronger language enforcement in the prompt
+                language_instruction = ""
+                if st.session_state.language != "English":
+                    language_instruction = f"""
+IMPORTANT LANGUAGE INSTRUCTION: 
+- You MUST respond exclusively in {st.session_state.language}. 
+- Do NOT include any words, phrases, or sentences in any other language.
+- If you cannot respond fully in {st.session_state.language}, say so and ask the user to rephrase in English.
+- This is critical for user understanding and safety.
+"""
+                
+                full_prompt = f"""
+You are a friendly and knowledgeable health assistant specializing in diabetes prevention and management.
+Provide helpful, evidence-based advice about nutrition, exercise, and lifestyle changes.
+Always remind users to consult healthcare professionals for medical advice.
+
+{language_instruction}
+
+{health_context}
+Current conversation context: {st.session_state.messages[-3:] if len(st.session_state.messages) > 3 else 'New conversation'}
+
+User question: {prompt}
+
+Please provide a helpful, concise response focused on diabetes prevention and management.
+"""
+                
+                # Add language instruction if not English
+                if st.session_state.language != "English":
+                    full_prompt += f"\n\nRemember: Respond ONLY in {st.session_state.language}."
+                
+                # -----------------------------
+# AI Health Assistant Page with AWS Bedrock Chatbot
+# -----------------------------
+elif page == "AI Health Assistant":
+    st.markdown("## AI Health Assistant")
+    
+    # Initialize the Bedrock client using secrets
+    @st.cache_resource
+    def get_bedrock_client():
+        try:
+            # Get credentials from Streamlit secrets
+            aws_access_key = st.secrets["AWS_ACCESS_KEY_ID"]
+            aws_secret_key = st.secrets["AWS_SECRET_ACCESS_KEY"]
+            region = st.secrets["AWS_DEFAULT_REGION"]
+            
+            # Initialize the client with credentials
+            client = boto3.client(
+                service_name='bedrock-runtime',
+                region_name=region,
+                aws_access_key_id=aws_access_key,
+                aws_secret_access_key=aws_secret_key
+            )
+            return client
+        except Exception as e:
+            st.error(f"Error initializing AWS Bedrock client: {e}")
+            st.error("Please make sure your AWS credentials are correctly set in Streamlit secrets.")
+            return None
+    
+    # Initialize session state for chat history with language tracking
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
+        ]
+    
+    # Initialize language selection in session state
+    if "language" not in st.session_state:
+        st.session_state.language = "English"
+    
+    # Initialize show_quick_actions in session state
+    if "show_quick_actions" not in st.session_state:
+        st.session_state.show_quick_actions = True
+    
+    # Language selection dropdown
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.session_state.language = st.selectbox(
+            "Select Chat Language",
+            ["English", "Malay", "Chinese", "Tamil", "Arabic"],
+            index=0
+        )
+    with col2:
+        if st.button("Clear Chat", use_container_width=True):
+            st.session_state.messages = [
+                {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
+            ]
+            st.session_state.show_quick_actions = True
+            st.rerun()
+    
+    # Apply Arabic input styling if Arabic is selected
+    if st.session_state.language == "Arabic":
+        st.markdown('<div class="arabic-input">', unsafe_allow_html=True)
+    
+    # Check if health data exists in session state
+    health_data_exists = "health_data" in st.session_state
+    
+    # Display health data summary if available
+    if health_data_exists:
+        st.info("### Your Health Summary")
+        health_data = st.session_state.health_data
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write(f"**Age:** {health_data.get('age', 'Not provided')}")
+            st.write(f"**Gender:** {health_data.get('gender', 'Not provided')}")
+            st.write(f"**BMI:** {health_data.get('bmi', 'Not provided')}")
+            st.write(f"**Diabetes Risk:** {health_data.get('risk', 'Not calculated')}")
+        
+        with col2:
+            st.write(f"**Blood Pressure:** {'High' if health_data.get('HighBP') == 'Yes' else 'Normal'}")
+            st.write(f"**Cholesterol:** {'High' if health_data.get('HighChol') == 'Yes' else 'Normal'}")
+            st.write(f"**Activity Level:** {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}")
+            st.write(f"**General Health:** {health_data.get('GenHlth', 'Not provided')}/5")
+    
+    # Display quick actions if no messages beyond the initial one
+    if st.session_state.show_quick_actions and len(st.session_state.messages) == 1:
+        st.markdown("---")
+        st.markdown("### Quick Actions")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("Get Diet Recommendations", help="Get personalized diet suggestions based on your health profile"):
+                prompt = "Provide specific dietary recommendations for diabetes prevention"
+                if health_data_exists:
+                    prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
+                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+                st.session_state.show_quick_actions = False
+                st.rerun()
+        
+        with col2:
+            if st.button("Exercise Plan", help="Get a personalized exercise plan"):
+                prompt = "Suggest an appropriate exercise routine"
+                if health_data_exists:
+                    activity_level = "active" if st.session_state.health_data.get('PhysActivity') == 'Yes' else "sedentary"
+                    prompt += f" for someone who is currently {activity_level}"
+                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+                st.session_state.show_quick_actions = False
+                st.rerun()
+        
+        with col3:
+            if st.button("Risk Explanation", help="Understand your diabetes risk factors"):
+                if health_data_exists:
+                    prompt = f"Explain my diabetes risk of {st.session_state.health_data.get('risk')} and what factors contribute to it"
+                else:
+                    prompt = "What are the main risk factors for diabetes?"
+                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+                st.session_state.show_quick_actions = False
+                st.rerun()
+    
+    # Display chat messages from history
+    st.markdown("---")
+    st.markdown("### Chat with Health Assistant")
+    
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            # Apply RTL styling only if the message is in Arabic
+            if message.get("language") == "Arabic":
+                st.markdown(f'<div class="rtl-text">{message["content"]}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(message["content"])
+    
+    # Close the Arabic input div if it was opened
+    if st.session_state.language == "Arabic":
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Function to invoke Bedrock with Llama 3
+    def invoke_llama(prompt, max_tokens=650, temperature=0.5):
+        try:
+            bedrock_client = get_bedrock_client()
+            if bedrock_client is None:
+                return "Error connecting to AI service. Please try again later."
+            
+            # Format the prompt for Llama 3 with language instruction
+            language_instruction = f"Please respond in {st.session_state.language}." if st.session_state.language != "English" else ""
+            
+            formatted_prompt = f"""
+<|begin_of_text|><|start_header_id|>user<|end_header_id|>
+{prompt}
+{language_instruction}
+<|eot_id|>
+<|start_header_id|>assistant<|end_header_id|>
+"""
+            
+            # Prepare the request body for Llama 3
+            body = json.dumps({
+                "prompt": formatted_prompt,
+                "max_gen_len": max_tokens,
+                "temperature": temperature,
+                "top_p": 0.9
+            })
+            
+            # Send the request to the Bedrock model
+            response = bedrock_client.invoke_model(
+                modelId='meta.llama3-70b-instruct-v1:0',
+                body=body,
+                contentType='application/json',
+                accept='application/json'
+            )
+            
+            # Parse the response
+            response_body = json.loads(response['body'].read())
+            return response_body.get('generation', 'No response generated')
+            
+        except Exception as e:
+            return f"Error: {str(e)}"
+    
+    # Function to process user input and generate AI response
+    def process_user_input(prompt):
+        # Add user message to chat history with language
+        st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+        
+        # Display user message with RTL if Arabic
+        with st.chat_message("user"):
+            if st.session_state.language == "Arabic":
+                st.markdown(f'<div class="rtl-text">{prompt}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(prompt)
+        
+        # Get AI response
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                # Create a context-aware prompt for the health assistant
+                health_context = ""
+                
+                if health_data_exists:
+                    health_data = st.session_state.health_data
+                    health_context = f"""
+Patient Health Context:
+- Age: {health_data.get('age', 'Not provided')}
+- Gender: {health_data.get('gender', 'Not provided')}
+- BMI: {health_data.get('bmi', 'Not provided')}
+- Diabetes Risk: {health_data.get('risk', 'Not calculated')}
+- Blood Pressure: {'High' if health_data.get('HighBP') == 'Yes' else 'Normal'}
+- Cholesterol: {'High' if health_data.get('HighChol') == 'Yes' else 'Normal'}
+- Physical Activity: {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}
+- Diet: Fruits: {'Yes' if health_data.get('Fruits') == 'Yes' else 'No'}, Vegetables: {'Yes' if health_data.get('Veggies') == 'Yes' else 'No'}
+- General Health: {health_data.get('GenHlth', 'Not provided')}/5
+- Smoking: {'Yes' if health_data.get('Smoker') == 'Yes' else 'No'}
+- Alcohol: {'Heavy' if health_data.get('HvyAlcoholConsump') == 'Yes' else 'Moderate/None'}
+
+"""
+                
+                # Stronger language enforcement in the prompt
+                language_instruction = ""
+                if st.session_state.language != "English":
+                    language_instruction = f"""
+IMPORTANT LANGUAGE INSTRUCTION: 
+- You MUST respond exclusively in {st.session_state.language}. 
+- Do NOT include any words, phrases, or sentences in any other language.
+- If you cannot respond fully in {st.session_state.language}, say so and ask the user to rephrase in English.
+- This is critical for user understanding and safety.
+"""
+                
+                full_prompt = f"""
+You are a friendly and knowledgeable health assistant specializing in diabetes prevention and management.
+Provide helpful, evidence-based advice about nutrition, exercise, and lifestyle changes.
+Always remind users to consult healthcare professionals for medical advice.
+
+{language_instruction}
+
+{health_context}
+Current conversation context: {st.session_state.messages[-3:] if len(st.session_state.messages) > 3 else 'New conversation'}
+
+User question: {prompt}
+
+Please provide a helpful, concise response focused on diabetes prevention and management.
+"""
+                
+                # Add language instruction if not English
+                if st.session_state.language != "English":
+                    full_prompt += f"\n\nRemember: Respond ONLY in {st.session_state.language}."
+                
+                               full_response = invoke_llama(full_prompt)
+                
+                # Post-process response to remove any mixed language content
+                if st.session_state.language != "English":
+                    # Common English words that might appear
+                    english_words = r'\b(if|the|and|or|but|is|are|was|were|to|for|of|in|on|at|by|with|about|against|between|into|through|during|before|after|above|below|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now)\b'
+                    
+                    # Check if there are English words in the response
+                    english_matches = re.findall(english_words, full_response, re.IGNORECASE)
+                    if english_matches and len(english_matches) > 3:  # More than 3 English words suggests mixed language
+                        # Request a cleaner response
+                        retry_prompt = f"""
+The previous response contained mixed languages. Please provide a response in {st.session_state.language} ONLY, without any English or other language words.
+
+Original question: {prompt}
+
+Please respond in {st.session_state.language} only.
+"""
+                        full_response = invoke_llama(retry_prompt)
+                
+                # Display response with RTL if Arabic is the current language
+                if st.session_state.language == "Arabic":
+                    st.markdown(f'<div class="rtl-text">{full_response}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(full_response)
+        
+        # Add assistant response to chat history with language
+        st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
+        
+        # Hide quick actions after first user input
+        st.session_state.show_quick_actions = False
+    
+    # Check if we need to process a quick action prompt
+    if len(st.session_state.messages) > 1 and st.session_state.messages[-1]["role"] == "user" and st.session_state.messages[-1]["content"] not in [msg["content"] for msg in st.session_state.messages[:-1]]:
+        user_message = st.session_state.messages[-1]["content"]
+        process_user_input(user_message)
+        st.rerun()
+    
+    # Chat input
+    chat_placeholder = st.empty()
+    with chat_placeholder:
+        prompt = st.chat_input("Ask about diabetes prevention, nutrition, or exercise...")
+    
+    if prompt:
+        process_user_input(prompt)
+        st.rerun()
+
+# -----------------------------
+# Health Education Page
+# -----------------------------
+elif page == "Health Education":
+    st.markdown("# Health Education")
+    st.markdown("Learn about diabetes prevention and management in Malaysia")
+    
+    # Create tabs for different educational topics
+    tab1, tab2, tab3, tab4 = st.tabs(["Diabetes Basics", "Malaysian Context", "Nutrition Guide", "Exercise & Lifestyle"])
+    
+    with tab1:
+        st.markdown("## Understanding Diabetes")
+        st.markdown("""
+        ### What is Diabetes?
+        Diabetes is a chronic condition that occurs when the pancreas doesn't produce enough insulin or when the body cannot effectively use the insulin it produces.
+        
+        ### Types of Diabetes
+        - **Type 1 Diabetes**: Usually diagnosed in children and young adults
+        - **Type 2 Diabetes**: Most common form, often related to lifestyle factors
+        - **Gestational Diabetes**: Occurs during pregnancy
+        
+        ### Common Symptoms
+        - Frequent urination
+        - Excessive thirst
+        - Extreme hunger
+        - Unexplained weight loss
+        - Fatigue
+        - Blurred vision
+        """)
+    
+    with tab2:
+        st.markdown("## Diabetes in Malaysia")
+        st.markdown("""
+        ### Statistics
+        - Malaysia has the highest rate of diabetes in Western Pacific
+        - Approximately 3.9 million Malaysians aged 18+ have diabetes
+        - Many cases remain undiagnosed
+        
+        ### Risk Factors for Malaysians
+        - Genetic predisposition
+        - Traditional diets high in carbohydrates and sugar
+        - Sedentary lifestyles
+        - Urbanization and changing food habits
+        
+        ### Government Initiatives
+        - National Strategic Plan for Non-Communicable Diseases
+        - MySejahtera health screening initiatives
+        - Subsidized healthcare for diabetes management
+        """)
+    
+    with tab3:
+        st.markdown("## Malaysian Nutrition Guide")
+        st.markdown("""
+        ### Healthy Local Food Choices
+        - **Nasi**: Choose brown rice over white rice
+        - **Protein**: Opt for grilled fish or chicken instead of fried
+        - **Vegetables**: Increase intake of ulam and local greens
+        - **Fruits**: Enjoy local fruits like papaya, guava, and watermelon
+        
+        ### Foods to Limit
+        - Sweet drinks like teh tarik and sirap
+        - High-sugar kuih and desserts
+        - Fried foods and high-fat dishes
+        - Processed foods and snacks
+        
+        ### Portion Control Tips
+        - Use the "suku-suku separuh" method: 1/4 protein, 1/4 carbs, 1/2 vegetables
+        - Choose smaller portions of rice
+        - Limit sugary beverages
+        """)
+    
+    with tab4:
+        st.markdown("## Exercise & Lifestyle")
+        st.markdown("""
+        ### Recommended Physical Activity
+        - At least 150 minutes of moderate exercise per week
+        - Brisk walking, cycling, or swimming
+        - Traditional activities like silat or tai chi
+        
+        ### Incorporating Activity into Daily Life
+        - Take the stairs instead of elevators
+        - Walk during lunch breaks
+        - Park farther from destinations
+        - Join community exercise groups
+        
+        ### Stress Management
+        - Practice mindfulness and meditation
+        - Get adequate sleep (7-8 hours per night)
+        - Maintain social connections
+        - Seek professional help if needed
+        """)
+    
+    # Additional resources section
+    st.markdown("---")
+    st.markdown("## Additional Resources")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### Malaysian Health Organizations")
+        st.markdown("- [Ministry of Health Malaysia](https://www.moh.gov.my/)")
+        st.markdown("- [National Diabetes Institute](http://www.nadi.org.my/)")
+        st.markdown("- [Malaysian Diabetes Association](http://www.diabetes.org.my/)")
+    
+    with col2:
+        st.markdown("### Educational Materials")
+        st.markdown("- [Diabetes Malaysia Handbook](http://www.diabetes.org.my/article.php?aid=141)")
+        st.markdown("- [Healthy Eating Guide](https://www.moh.gov.my/index.php/pages/view/227)")
+        st.markdown("- [Exercise Recommendations](https://www.moh.gov.my/index.php/pages/view/229)")
