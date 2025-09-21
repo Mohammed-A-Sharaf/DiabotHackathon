@@ -5,6 +5,181 @@ import pandas as pd
 import numpy as np
 import json
 import boto3
+import re
+import matplotlib.pyplot as plt
+
+# -----------------------------
+# Custom CSS Styling
+# -----------------------------
+st.markdown("""
+<style>
+    /* Main styling */
+    .main {
+        background-color: #f8f9fa;
+    }
+    
+    /* Sidebar styling */
+    .css-1d391kg {
+        background-color: #1e40af;
+        color: white;
+    }
+    
+    .css-1d391kg h1, .css-1d391kg h2, .css-1d391kg h3, .css-1d391kg h4, .css-1d391kg h5, .css-1d391kg h6 {
+        color: white;
+    }
+    
+    .css-1d391kg a {
+        color: #93c5fd;
+    }
+    
+    .css-1d391kg a:hover {
+        color: white;
+    }
+    
+    /* Button styling */
+    .stButton>button {
+        background-color: #1e40af;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        padding: 10px 24px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton>button:hover {
+        background-color: #1e3a8a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* Header styling */
+    h1, h2, h3 {
+        color: #1e40af;
+    }
+    
+    /* Card-like styling for sections */
+    .block-container {
+        padding: 2rem;
+    }
+    
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: #e5e7eb;
+        border-radius: 8px 8px 0 0;
+        padding: 12px 20px;
+        color: #374151;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: #1e40af;
+        color: white;
+    }
+    
+    .stTabs [data-baseweb="tab"] > div {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .rtl-text {
+        text-align: right;
+        direction: rtl;
+    }
+    
+    .stChatInput > div > div > input {
+        text-align: left;
+        direction: ltr;
+    }
+    
+    .arabic-input .stChatInput > div > div > input {
+        text-align: right;
+        direction: rtl;
+    }
+    
+    .stChatMessage {
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+    
+    .stChatMessage [data-testid="stChatMessageContent"] {
+        padding: 1rem;
+    }
+    
+    .stMetric {
+        background-color: white;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stSuccess {
+        background-color: #dcfce7;
+        color: #166534;
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    
+    .stError {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    
+    .stWarning {
+        background-color: #fef3c7;
+        color: #92400e;
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    
+    .stProgress > div > div {
+        background-color: #1e40af;
+    }
+    
+    .stTextInput > div > div > input {
+        border-radius: 8px;
+    }
+    
+    .stNumberInput > div > div > input {
+        border-radius: 8px;
+    }
+    
+    .stSelectbox > div > div {
+        border-radius: 8px;
+    }
+    
+    .stSlider > div > div {
+        border-radius: 8px;
+    }
+    
+    .health-good {
+        color: #16a34a;
+        font-weight: bold;
+    }
+    
+    .health-warning {
+        color: #ca8a04;
+        font-weight: bold;
+    }
+    
+    .health-danger {
+        color: #dc2626;
+        font-weight: bold;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # -----------------------------
 # Model Definition
@@ -31,7 +206,6 @@ class DiabetesModel(nn.Module):
         x = self.out(x)
         return x
 
-
 # -----------------------------
 # Load Trained Model
 # -----------------------------
@@ -51,26 +225,27 @@ model = load_model()
 # Page Config & Sidebar
 # -----------------------------
 st.set_page_config(
-    page_title="HealthGuard AI - Diabetes Risk Dashboard",
-    page_icon="🏥",
+    page_title="DiaBot AI - Diabetes Risk Dashboard",
+    page_icon="Logo Header/HeaderLogo.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # Sidebar navigation
 with st.sidebar:
-    st.title("HealthGuard AI")
+    st.image("DIaBot Logo/logo.png", width=200)
+    st.markdown("---")
+    
+    st.title("DiaBot AI")
     st.markdown("---")
     page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant", "Health Education"])
     
-    # Add Malaysian-specific resources
     st.markdown("---")
     st.markdown("### Malaysian Resources")
     st.markdown("- [Ministry of Health Malaysia](https://www.moh.gov.my/)")
     st.markdown("- [National Diabetes Institute (NADI)](http://www.nadi.org.my/)")
     st.markdown("- [Malaysian Diabetes Association](http://www.diabetes.org.my/)")
     
-    # Add emergency contact information for Malaysia
     st.markdown("---")
     st.markdown("### Emergency Contacts (Malaysia)")
     st.markdown("**If you're experiencing a medical emergency, call 999 immediately.**")
@@ -88,7 +263,6 @@ NORMALIZATION_PARAMS = {
 }
 
 def normalize_feature(value, feature_name):
-    """Normalize feature using the same parameters as during training"""
     if feature_name in NORMALIZATION_PARAMS:
         min_val = NORMALIZATION_PARAMS[feature_name]["min"]
         max_val = NORMALIZATION_PARAMS[feature_name]["max"]
@@ -115,7 +289,7 @@ age_categories = {
     13: "80+ years"
 }
 
-# Income category mapping (Malaysian Ringgit)
+# Income category mapping
 income_categories = {
     1: "Less than RM 1,000",
     2: "RM 1,000 to RM 2,000",
@@ -127,13 +301,62 @@ income_categories = {
     8: "RM 7,000 or more"
 }
 
+# Helper function for future predictions
+def get_age_category(age):
+    if age >= 80:
+        return 13
+    elif age >= 75:
+        return 12
+    elif age >= 70:
+        return 11
+    elif age >= 65:
+        return 10
+    elif age >= 60:
+        return 9
+    elif age >= 55:
+        return 8
+    elif age >= 50:
+        return 7
+    elif age >= 45:
+        return 6
+    elif age >= 40:
+        return 5
+    elif age >= 35:
+        return 4
+    elif age >= 30:
+        return 3
+    elif age >= 25:
+        return 2
+    else:
+        return 1
+
+# Function to predict future risk
+def predict_future_risk(current_features, current_age, months=36):
+    future_risks = []
+    
+    for month in range(0, months + 1, 6):  # Predict every 6 months
+        future_features = current_features.copy()
+        future_age = current_age + (month / 12)
+        future_age_category = get_age_category(future_age)
+        future_features[18] = future_age_category
+        
+        X_future = torch.tensor(future_features, dtype=torch.float32).unsqueeze(0)
+        
+        with torch.no_grad():
+            outputs = model(X_future)
+            probabilities = torch.softmax(outputs, dim=1)
+            risk = probabilities[0][1].item()
+        
+        future_risks.append(risk)
+    
+    return future_risks
+
 # -----------------------------
 # Health Analysis Page
 # -----------------------------
 if page == "Health Analysis":
     st.markdown("## Patient Health Analysis & Risk Prediction")
 
-    # Patient info
     st.subheader("Patient Information")
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -151,10 +374,8 @@ if page == "Health Analysis":
         status = st.selectbox("Health Status", ["Healthy", "Pre-Diabetic", "Diabetic"])
 
     st.markdown("---")
-
     st.subheader("Health Information")
 
-    # Use tabs for better organization
     tab1, tab2, tab3, tab4 = st.tabs(["Demographics", "Medical History", "Lifestyle", "Health Metrics"])
 
     with tab1:
@@ -167,7 +388,7 @@ if page == "Health Analysis":
                 "Age Category",
                 options=list(age_categories.keys()),
                 format_func=lambda x: f"{x} - {age_categories[x]}",
-                index=4  # Default to 40-44 years
+                index=4
             )
             
         with col2:
@@ -176,7 +397,7 @@ if page == "Health Analysis":
                 "Income Category",
                 options=list(income_categories.keys()),
                 format_func=lambda x: f"{x} - {income_categories[x]}",
-                index=3  # Default to RM 3,000 to RM 4,000
+                index=3
             )
             
         with col3:
@@ -252,17 +473,16 @@ if page == "Health Analysis":
         Income
     ]
     
-    # Convert to tensor
     X = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
 
-    # Prediction
-    if st.button("Predict Risk", type="primary", use_container_width=True):
+    predict_btn = st.button("Predict Risk", type="primary", use_container_width=True)
+
+    if predict_btn:
         with torch.no_grad():
             outputs = model(X)
             probabilities = torch.softmax(outputs, dim=1)
             risk = probabilities[0][1].item()
 
-        # Store health data in session state for the AI Health Assistant
         st.session_state.health_data = {
             "patient_name": patient_name,
             "age": age,
@@ -291,27 +511,22 @@ if page == "Health Analysis":
         
         st.success(f"Predicted Diabetes Risk: {risk:.2%}")
 
-        # Risk interpretation
         if risk < 0.25:
-            st.info("Low Risk – Maintain your healthy lifestyle.")
+            st.markdown('<div class="stSuccess">Low Risk – Maintain your healthy lifestyle.</div>', unsafe_allow_html=True)
         elif risk < 0.6:
-            st.warning("Moderate Risk – Consider lifestyle improvements.")
+            st.markdown('<div class="stWarning">Moderate Risk – Consider lifestyle improvements.</div>', unsafe_allow_html=True)
         else:
-            st.error("High Risk – Please consult a healthcare professional.")
+            st.markdown('<div class="stError">High Risk – Please consult a healthcare professional.</div>', unsafe_allow_html=True)
 
-        # Probability breakdown
         st.progress(risk)
         st.write("**Probability Breakdown:**")
         st.write(f"- No Diabetes: {(1-risk):.2%}")
         st.write(f"- Diabetes: {risk:.2%}")
 
-        # Enhanced personalized insights with AI analysis
         st.subheader("Personalized Health Insights")
         
-        # Create a personalized analysis based on the user's data
         insights = []
         
-        # BMI analysis
         if BMI < 18.5:
             insights.append("Your BMI suggests you're underweight. Consider a balanced diet with adequate nutrition.")
         elif BMI >= 25 and BMI < 30:
@@ -319,38 +534,30 @@ if page == "Health Analysis":
         elif BMI >= 30:
             insights.append("Your BMI indicates obesity, a major diabetes risk factor. Focus on gradual weight loss through diet and exercise.")
         
-        # Blood pressure analysis
         if HighBP == "Yes":
             insights.append("Managing your high blood pressure is crucial. Reduce sodium intake and monitor your levels regularly.")
         
-        # Cholesterol analysis
         if HighChol == "Yes":
             insights.append("High cholesterol increases diabetes risk. Consider reducing saturated fats and increasing fiber intake.")
         
-        # Activity analysis
         if PhysActivity == "No":
             insights.append("Regular physical activity (150 mins/week) can improve insulin sensitivity. Start with brisk walking.")
         
-        # Diet analysis
         if Fruits == "No" or Veggies == "No":
             insights.append("Aim for 5 servings of fruits and vegetables daily. They're rich in fiber and antioxidants that protect against diabetes.")
         
-        # Mental health analysis
         if MentHlth > 7:
             insights.append("Your mental health days are elevated. Stress management techniques may help reduce diabetes risk.")
         
-        # Smoking analysis
         if Smoker == "Yes":
             insights.append("Smoking increases insulin resistance. Consider cessation programs to reduce your diabetes risk.")
         
-        # Display the insights
         if insights:
             for i, insight in enumerate(insights, 1):
                 st.write(f"{i}. {insight}")
         else:
             st.write("Your health profile shows no significant risk factors. Maintain your healthy habits!")
         
-        # Add specific tips based on risk level
         st.subheader("Personalized Recommendations")
         
         if risk < 0.25:
@@ -366,9 +573,70 @@ if page == "Health Analysis":
             st.write("• Consider working with a nutritionist for meal planning")
             st.write("• Regular blood glucose monitoring is recommended")
         
-        # Add the required warning
         st.warning("**Important Notice:** These insights and recommendations are generated based on the information provided and are not a substitute for professional medical advice. Please consult with your healthcare provider for personalized medical guidance.")
-
+        
+        # Add the statistical prediction for the next 36 months
+        with st.spinner("Calculating future risk projections..."):
+            future_risks = predict_future_risk(features, age, months=36)
+            
+            months = list(range(0, 37, 6))
+            current_date = pd.Timestamp.now()
+            month_labels = [(current_date + pd.DateOffset(months=i)).strftime("%b %Y") for i in months]
+            
+            risk_data = pd.DataFrame({
+                "Month": months,
+                "Month_Label": month_labels,
+                "Risk": future_risks
+            })
+            
+            st.subheader("36-Month Diabetes Risk Projection")
+            
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                st.line_chart(risk_data, x="Month_Label", y="Risk")
+            
+            with col2:
+                st.write("**Risk by Period:**")
+                for i, risk in enumerate(future_risks):
+                    st.write(f"{month_labels[i]}: {risk:.2%}")
+            
+            st.subheader("Future Risk Analysis")
+            
+            risk_change = future_risks[-1] - future_risks[0]
+            
+            if risk_change > 0.1:
+                st.error(f"**Warning:** Your diabetes risk is projected to increase significantly by {month_labels[-1]} (+{risk_change:.2%}). Consider making lifestyle changes now to reduce this risk.")
+            elif risk_change > 0.05:
+                st.warning(f"**Notice:** Your diabetes risk is projected to increase by {month_labels[-1]} (+{risk_change:.2%}). Small lifestyle changes now can help mitigate this increase.")
+            elif abs(risk_change) <= 0.05:
+                st.info(f"**Stable:** Your diabetes risk is projected to remain relatively stable through {month_labels[-1]} ({risk_change:+.2%}).")
+            else:
+                st.success(f"**Improving:** Your diabetes risk is projected to decrease by {month_labels[-1]} ({risk_change:+.2%}). Keep up your healthy habits!")
+            
+            st.subheader("Long-Term Recommendations")
+            
+            if future_risks[-1] >= 0.6:
+                st.write("• Develop a comprehensive long-term health plan with your doctor")
+                st.write("• Consider regular monitoring of blood glucose levels")
+                st.write("• Focus on sustainable weight management strategies")
+                st.write("• Explore stress reduction techniques for long-term health")
+            elif future_risks[-1] >= 0.25:
+                st.write("• Set gradual health improvement goals")
+                st.write("• Consider annual health check-ups to monitor progress")
+                st.write("• Focus on maintaining a balanced diet and regular exercise")
+                st.write("• Monitor key health indicators like blood pressure and cholesterol")
+            else:
+                st.write("• Continue your current healthy lifestyle habits")
+                st.write("• Stay vigilant with regular health screenings")
+                st.write("• Share your healthy habits with friends and family")
+                st.write("• Consider preventive health measures as you age")
+            
+            st.warning("""
+            **Important Notice:** These future projections are estimates based on your current health profile and the assumption that most factors remain constant except for age. 
+            Actual future risk may vary significantly based on lifestyle changes, medical interventions, and other factors. 
+            Regular consultation with healthcare professionals is essential for accurate health assessment and planning.
+            """)
 
 # -----------------------------
 # AI Health Assistant Page with AWS Bedrock Chatbot
@@ -376,16 +644,13 @@ if page == "Health Analysis":
 elif page == "AI Health Assistant":
     st.markdown("## AI Health Assistant")
     
-    # Initialize the Bedrock client using secrets
     @st.cache_resource
     def get_bedrock_client():
         try:
-            # Get credentials from Streamlit secrets
             aws_access_key = st.secrets["AWS_ACCESS_KEY_ID"]
             aws_secret_key = st.secrets["AWS_SECRET_ACCESS_KEY"]
             region = st.secrets["AWS_DEFAULT_REGION"]
             
-            # Initialize the client with credentials
             client = boto3.client(
                 service_name='bedrock-runtime',
                 region_name=region,
@@ -398,40 +663,37 @@ elif page == "AI Health Assistant":
             st.error("Please make sure your AWS credentials are correctly set in Streamlit secrets.")
             return None
     
-    # Initialize session state for chat history
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me."}
+            {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
         ]
     
-    # Initialize language selection in session state
     if "language" not in st.session_state:
         st.session_state.language = "English"
     
-    # Initialize show_quick_actions in session state
     if "show_quick_actions" not in st.session_state:
         st.session_state.show_quick_actions = True
     
-    # Language selection dropdown
     col1, col2 = st.columns([3, 1])
     with col1:
         st.session_state.language = st.selectbox(
             "Select Chat Language",
-            ["English", "Malay", "Chinese", "Tamil"],
+            ["English", "Malay", "Chinese", "Tamil", "Arabic"],
             index=0
         )
     with col2:
         if st.button("Clear Chat", use_container_width=True):
             st.session_state.messages = [
-                {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me."}
+                {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
             ]
             st.session_state.show_quick_actions = True
             st.rerun()
     
-    # Check if health data exists in session state
+    if st.session_state.language == "Arabic":
+        st.markdown('<div class="arabic-input">', unsafe_allow_html=True)
+    
     health_data_exists = "health_data" in st.session_state
     
-    # Display health data summary if available
     if health_data_exists:
         st.info("### Your Health Summary")
         health_data = st.session_state.health_data
@@ -449,7 +711,6 @@ elif page == "AI Health Assistant":
             st.write(f"**Activity Level:** {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}")
             st.write(f"**General Health:** {health_data.get('GenHlth', 'Not provided')}/5")
     
-    # Display quick actions if no messages beyond the initial one
     if st.session_state.show_quick_actions and len(st.session_state.messages) == 1:
         st.markdown("---")
         st.markdown("### Quick Actions")
@@ -461,7 +722,7 @@ elif page == "AI Health Assistant":
                 prompt = "Provide specific dietary recommendations for diabetes prevention"
                 if health_data_exists:
                     prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
-                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
                 st.session_state.show_quick_actions = False
                 st.rerun()
         
@@ -471,7 +732,7 @@ elif page == "AI Health Assistant":
                 if health_data_exists:
                     activity_level = "active" if st.session_state.health_data.get('PhysActivity') == 'Yes' else "sedentary"
                     prompt += f" for someone who is currently {activity_level}"
-                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
                 st.session_state.show_quick_actions = False
                 st.rerun()
         
@@ -481,26 +742,29 @@ elif page == "AI Health Assistant":
                     prompt = f"Explain my diabetes risk of {st.session_state.health_data.get('risk')} and what factors contribute to it"
                 else:
                     prompt = "What are the main risk factors for diabetes?"
-                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
                 st.session_state.show_quick_actions = False
                 st.rerun()
     
-    # Display chat messages from history
     st.markdown("---")
     st.markdown("### Chat with Health Assistant")
     
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+            if message.get("language") == "Arabic":
+                st.markdown(f'<div class="rtl-text">{message["content"]}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(message["content"])
     
-    # Function to invoke Bedrock with Llama 3
-    def invoke_llama(prompt, max_tokens=500, temperature=0.5):
+    if st.session_state.language == "Arabic":
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    def invoke_llama(prompt, max_tokens=650, temperature=0.5):
         try:
             bedrock_client = get_bedrock_client()
             if bedrock_client is None:
                 return "Error connecting to AI service. Please try again later."
             
-            # Format the prompt for Llama 3 with language instruction
             language_instruction = f"Please respond in {st.session_state.language}." if st.session_state.language != "English" else ""
             
             formatted_prompt = f"""
@@ -511,7 +775,6 @@ elif page == "AI Health Assistant":
 <|start_header_id|>assistant<|end_header_id|>
 """
             
-            # Prepare the request body for Llama 3
             body = json.dumps({
                 "prompt": formatted_prompt,
                 "max_gen_len": max_tokens,
@@ -519,34 +782,30 @@ elif page == "AI Health Assistant":
                 "top_p": 0.9
             })
             
-            # Send the request to the Bedrock model
             response = bedrock_client.invoke_model(
-                modelId='meta.llama3-8b-instruct-v1:0',
+                modelId='meta.llama3-70b-instruct-v1:0',
                 body=body,
                 contentType='application/json',
                 accept='application/json'
             )
             
-            # Parse the response
             response_body = json.loads(response['body'].read())
             return response_body.get('generation', 'No response generated')
             
         except Exception as e:
             return f"Error: {str(e)}"
     
-    # Function to process user input and generate AI response
     def process_user_input(prompt):
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
         
-        # Display user message
         with st.chat_message("user"):
-            st.markdown(prompt)
+            if st.session_state.language == "Arabic":
+                st.markdown(f'<div class="rtl-text">{prompt}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(prompt)
         
-        # Get AI response
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                # Create a context-aware prompt for the health assistant
                 health_context = ""
                 
                 if health_data_exists:
@@ -567,10 +826,22 @@ Patient Health Context:
 
 """
                 
+                language_instruction = ""
+                if st.session_state.language != "English":
+                    language_instruction = f"""
+IMPORTANT LANGUAGE INSTRUCTION: 
+- You MUST respond exclusively in {st.session_state.language}. 
+- Do NOT include any words, phrases, or sentences in any other language.
+- If you cannot respond fully in {st.session_state.language}, say so and ask the user to rephrase in English.
+- This is critical for user understanding and safety.
+"""
+                
                 full_prompt = f"""
 You are a friendly and knowledgeable health assistant specializing in diabetes prevention and management.
 Provide helpful, evidence-based advice about nutrition, exercise, and lifestyle changes.
 Always remind users to consult healthcare professionals for medical advice.
+
+{language_instruction}
 
 {health_context}
 Current conversation context: {st.session_state.messages[-3:] if len(st.session_state.messages) > 3 else 'New conversation'}
@@ -580,26 +851,38 @@ User question: {prompt}
 Please provide a helpful, concise response focused on diabetes prevention and management.
 """
                 
-                # Add language instruction if not English
                 if st.session_state.language != "English":
-                    full_prompt += f"\n\nPlease respond in {st.session_state.language}."
+                    full_prompt += f"\n\nRemember: Respond ONLY in {st.session_state.language}."
                 
                 full_response = invoke_llama(full_prompt)
-                st.markdown(full_response)
+                
+                if st.session_state.language != "English":
+                    english_words = r'\b(if|the|and|or|but|is|are|was|were|to|for|of|in|on|at|by|with|about|against|between|into|through|during|before|after|above|below|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now)\b'
+                    
+                    english_matches = re.findall(english_words, full_response, re.IGNORECASE)
+                    if english_matches and len(english_matches) > 3:
+                        retry_prompt = f"""
+The previous response contained mixed languages. Please provide a response in {st.session_state.language} ONLY, without any English or other language words.
+
+Original question: {prompt}
+
+Please respond in {st.session_state.language} only.
+"""
+                        full_response = invoke_llama(retry_prompt)
+                
+                if st.session_state.language == "Arabic":
+                    st.markdown(f'<div class="rtl-text">{full_response}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(full_response)
         
-        # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
-        
-        # Hide quick actions after first user input
+        st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
         st.session_state.show_quick_actions = False
     
-    # Check if we need to process a quick action prompt
     if len(st.session_state.messages) > 1 and st.session_state.messages[-1]["role"] == "user" and st.session_state.messages[-1]["content"] not in [msg["content"] for msg in st.session_state.messages[:-1]]:
         user_message = st.session_state.messages[-1]["content"]
         process_user_input(user_message)
         st.rerun()
     
-    # Chat input
     chat_placeholder = st.empty()
     with chat_placeholder:
         prompt = st.chat_input("Ask about diabetes prevention, nutrition, or exercise...")
@@ -615,7 +898,6 @@ elif page == "Health Education":
     st.markdown("# Health Education")
     st.markdown("Learn about diabetes prevention and management in Malaysia")
     
-    # Create tabs for different educational topics
     tab1, tab2, tab3, tab4 = st.tabs(["Diabetes Basics", "Malaysian Context", "Nutrition Guide", "Exercise & Lifestyle"])
     
     with tab1:
@@ -700,7 +982,6 @@ elif page == "Health Education":
         - Seek professional help if needed
         """)
     
-    # Additional resources section
     st.markdown("---")
     st.markdown("## Additional Resources")
     col1, col2 = st.columns(2)
@@ -714,5 +995,5 @@ elif page == "Health Education":
     with col2:
         st.markdown("### Educational Materials")
         st.markdown("- [Diabetes Malaysia Handbook](http://www.diabetes.org.my/article.php?aid=141)")
-        st.markdown("- [Healthy Eating Guide](https://www.moh.gov.my/index.php/pages/view/227)")
-        st.markdown("- [Exercise Recommendations](https://www.moh.gov.my/index.php/pages/view/229)")
+        st.markdown("- [Healthy Eating Guide](https://www.moh.gov.my/index.php/pages.view/227)")
+        st.markdown("- [Exercise Recommendations](https://www.moh.gov.my/index.php/pages.view/229)")
