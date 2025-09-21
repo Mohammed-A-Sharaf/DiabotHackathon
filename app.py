@@ -296,26 +296,21 @@ with st.sidebar:
     if 'page' not in st.session_state:
         st.session_state.page = "Health Analysis"
     
-    # Navigation buttons
-    col1, col2, col3 = st.columns(3)
+    # Navigation buttons - stacked vertically
+    if st.button("Health Analysis", use_container_width=True, 
+                type="primary" if st.session_state.page == "Health Analysis" else "secondary"):
+        st.session_state.page = "Health Analysis"
+        st.rerun()
     
-    with col1:
-        if st.button("Health", use_container_width=True, 
-                    type="primary" if st.session_state.page == "Health Analysis" else "secondary"):
-            st.session_state.page = "Health Analysis"
-            st.rerun()
+    if st.button("AI Health Assistant", use_container_width=True,
+                type="primary" if st.session_state.page == "AI Health Assistant" else "secondary"):
+        st.session_state.page = "AI Health Assistant"
+        st.rerun()
     
-    with col2:
-        if st.button("AI Assistant", use_container_width=True,
-                    type="primary" if st.session_state.page == "AI Health Assistant" else "secondary"):
-            st.session_state.page = "AI Health Assistant"
-            st.rerun()
-    
-    with col3:
-        if st.button("Education", use_container_width=True,
-                    type="primary" if st.session_state.page == "Health Education" else "secondary"):
-            st.session_state.page = "Health Education"
-            st.rerun()
+    if st.button("Health Education", use_container_width=True,
+                type="primary" if st.session_state.page == "Health Education" else "secondary"):
+        st.session_state.page = "Health Education"
+        st.rerun()
     
     st.markdown("---")
     
