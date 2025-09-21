@@ -51,7 +51,7 @@ model = load_model()
 # Page Config & Sidebar
 # -----------------------------
 st.set_page_config(
-    page_title="HealthGuard AI - Diabetes Risk Dashboard",
+    page_title="DiaBot AI - Diabetes Risk Dashboard",
     page_icon="🏥",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -59,7 +59,7 @@ st.set_page_config(
 
 # Sidebar navigation
 with st.sidebar:
-    st.title("HealthGuard AI")
+    st.title("DiaBot AI")
     st.markdown("---")
     page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant", "Health Education"])
     
