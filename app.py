@@ -73,6 +73,7 @@ st.markdown("""
         gap: 8px;
         padding-top: 10px;
         padding-bottom: 10px;
+        color: #374151; /* Added dark text color for non-active tabs */
     }
     
     .stTabs [aria-selected="true"] {
