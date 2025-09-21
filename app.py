@@ -70,15 +70,24 @@ st.markdown("""
         white-space: pre-wrap;
         background-color: #e5e7eb;
         border-radius: 8px 8px 0 0;
-        gap: 8px;
-        padding-top: 10px;
-        padding-bottom: 10px;
-        color: #374151; /* Added dark text color for non-active tabs */
+        padding: 12px 20px;  /* Increased padding for better spacing */
+        color: #374151;
+        display: flex;
+        align-items: center;  /* Vertically center text */
+        justify-content: center;  /* Horizontally center text */
     }
     
     .stTabs [aria-selected="true"] {
         background-color: #1e40af;
         color: white;
+    }
+    
+    /* Ensure tab text is properly aligned */
+    .stTabs [data-baseweb="tab"] > div {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
     }
     
     /* Chat message styling */
@@ -315,7 +324,7 @@ if page == "Health Analysis":
     st.subheader("Health Information")
 
     # Use tabs for better organization
-    tab1, tab2, tab3, tab4 = st.tabs([" Demographics ", " Medical History ", " Lifestyle ", " Health Metrics "])
+    tab1, tab2, tab3, tab4 = st.tabs(["Demographics", "Medical History", "Lifestyle", "Health Metrics"])
 
     with tab1:
         st.markdown("### Demographic Information")
