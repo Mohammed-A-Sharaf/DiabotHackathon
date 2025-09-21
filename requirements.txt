@@ -5,3 +5,4 @@ numpy
 scikit-learn
 plotly
 boto3
+matplotlib
