@@ -7,6 +7,161 @@ import json
 import boto3
 
 # -----------------------------
+# Custom CSS Styling
+# -----------------------------
+st.markdown("""
+<style>
+    /* Main styling */
+    .main {
+        background-color: #f8f9fa;
+    }
+    
+    /* Sidebar styling */
+    .css-1d391kg {
+        background-color: #1e40af;
+        color: white;
+    }
+    
+    .css-1d391kg h1, .css-1d391kg h2, .css-1d391kg h3, .css-1d391kg h4, .css-1d391kg h5, .css-1d391kg h6 {
+        color: white;
+    }
+    
+    .css-1d391kg a {
+        color: #93c5fd;
+    }
+    
+    .css-1d391kg a:hover {
+        color: white;
+    }
+    
+    /* Button styling */
+    .stButton>button {
+        background-color: #1e40af;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        padding: 10px 24px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton>button:hover {
+        background-color: #1e3a8a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* Header styling */
+    h1, h2, h3 {
+        color: #1e40af;
+    }
+    
+    /* Card-like styling for sections */
+    .block-container {
+        padding: 2rem;
+    }
+    
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: #e5e7eb;
+        border-radius: 8px 8px 0 0;
+        gap: 8px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: #1e40af;
+        color: white;
+    }
+    
+    /* Chat message styling */
+    .stChatMessage {
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+    
+    .stChatMessage [data-testid="stChatMessageContent"] {
+        padding: 1rem;
+    }
+    
+    /* Metric cards */
+    .stMetric {
+        background-color: white;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Custom success/error/warning messages */
+    .stSuccess {
+        background-color: #dcfce7;
+        color: #166534;
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    
+    .stError {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    
+    .stWarning {
+        background-color: #fef3c7;
+        color: #92400e;
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    
+    /* Progress bar styling */
+    .stProgress > div > div {
+        background-color: #1e40af;
+    }
+    
+    /* Input field styling */
+    .stTextInput > div > div > input {
+        border-radius: 8px;
+    }
+    
+    .stNumberInput > div > div > input {
+        border-radius: 8px;
+    }
+    
+    .stSelectbox > div > div {
+        border-radius: 8px;
+    }
+    
+    .stSlider > div > div {
+        border-radius: 8px;
+    }
+    
+    /* Health status indicators */
+    .health-good {
+        color: #16a34a;
+        font-weight: bold;
+    }
+    
+    .health-warning {
+        color: #ca8a04;
+        font-weight: bold;
+    }
+    
+    .health-danger {
+        color: #dc2626;
+        font-weight: bold;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# -----------------------------
 # Model Definition
 # -----------------------------
 class DiabetesModel(nn.Module):
@@ -24,7 +179,7 @@ class DiabetesModel(nn.Module):
         x = self.relu(self.fc1(x))
         x = self.dropout(x)
         x = self.relu(self.fc2(x))
-        x = the_dropout(x)
+        x = self.dropout(x)
         x = self.relu(self.fc3(x))
         x = self.dropout(x)
         x = self.relu(self.fc4(x))
@@ -60,8 +215,9 @@ st.set_page_config(
 # Sidebar navigation
 with st.sidebar:
     # Add logo to the sidebar
-    st.image("DIaBot Logo/logo.png", width=100)
-
+    st.image("DIaBot Logo/logo.png", width=200)
+    st.markdown("---")
+    
     st.title("DiaBot AI")
     st.markdown("---")
     page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant", "Health Education"])
@@ -294,13 +450,13 @@ if page == "Health Analysis":
         
         st.success(f"Predicted Diabetes Risk: {risk:.2%}")
 
-        # Risk interpretation
+        # Risk interpretation with custom styling
         if risk < 0.25:
-            st.info("Low Risk – Maintain your healthy lifestyle.")
+            st.markdown('<div class="stSuccess">Low Risk – Maintain your healthy lifestyle.</div>', unsafe_allow_html=True)
         elif risk < 0.6:
-            st.warning("Moderate Risk – Consider lifestyle improvements.")
+            st.markdown('<div class="stWarning">Moderate Risk – Consider lifestyle improvements.</div>', unsafe_allow_html=True)
         else:
-            st.error("High Risk – Please consult a healthcare professional.")
+            st.markdown('<div class="stError">High Risk – Please consult a healthcare professional.</div>', unsafe_allow_html=True)
 
         # Probability breakdown
         st.progress(risk)
