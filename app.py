@@ -814,6 +814,10 @@ elif page == "AI Health Assistant":
     if "show_quick_actions" not in st.session_state:
         st.session_state.show_quick_actions = True
     
+    # Track if a quick action was just triggered
+    if "quick_action_triggered" not in st.session_state:
+        st.session_state.quick_action_triggered = False
+    
     col1, col2 = st.columns([3, 1])
     with col1:
         st.session_state.language = st.selectbox(
@@ -827,6 +831,7 @@ elif page == "AI Health Assistant":
                 {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
             ]
             st.session_state.show_quick_actions = True
+            st.session_state.quick_action_triggered = False
             st.rerun()
     
     # Apply appropriate text direction based on language
@@ -867,6 +872,7 @@ elif page == "AI Health Assistant":
                     prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
                 st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
                 st.session_state.show_quick_actions = False
+                st.session_state.quick_action_triggered = True
                 st.rerun()
         
         with col2:
@@ -877,6 +883,7 @@ elif page == "AI Health Assistant":
                     prompt += f" for someone who is currently {activity_level}"
                 st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
                 st.session_state.show_quick_actions = False
+                st.session_state.quick_action_triggered = True
                 st.rerun()
         
         with col3:
@@ -887,6 +894,7 @@ elif page == "AI Health Assistant":
                     prompt = "What are the main risk factors for diabetes?"
                 st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
                 st.session_state.show_quick_actions = False
+                st.session_state.quick_action_triggered = True
                 st.rerun()
     
     st.markdown("---")
@@ -942,7 +950,9 @@ elif page == "AI Health Assistant":
             return f"Error: {str(e)}"
     
     def process_user_input(prompt):
-        st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+        # Only add user message if it's not already the last message
+        if len(st.session_state.messages) == 0 or st.session_state.messages[-1]["content"] != prompt:
+            st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
         
         with st.chat_message("user"):
             if st.session_state.language == "Arabic":
@@ -1044,10 +1054,14 @@ Please respond in {st.session_state.language} only.
                 else:
                     st.markdown(full_response)
         
-        st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
+        # Only add assistant message if it's not already the last message
+        if len(st.session_state.messages) == 0 or st.session_state.messages[-1]["content"] != full_response:
+            st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
         st.session_state.show_quick_actions = False
+        st.session_state.quick_action_triggered = False
     
-    if len(st.session_state.messages) > 1 and st.session_state.messages[-1]["role"] == "user" and st.session_state.messages[-1]["content"] not in [msg["content"] for msg in st.session_state.messages[:-1]]:
+    # Only process messages if a quick action was triggered or there's a new chat input
+    if st.session_state.quick_action_triggered and len(st.session_state.messages) > 0 and st.session_state.messages[-1]["role"] == "user":
         user_message = st.session_state.messages[-1]["content"]
         process_user_input(user_message)
         st.rerun()
