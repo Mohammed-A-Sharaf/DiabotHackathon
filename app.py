@@ -739,72 +739,72 @@ elif page == "AI Health Assistant":
             return f"Error: {str(e)}"
     
     # Function to process user input and generate AI response
-def process_user_input(prompt):
-    # Add user message to chat history with language
-    st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+    def process_user_input(prompt):
+        # Add user message to chat history with language
+        st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+        
+        # Display user message with RTL if Arabic
+        with st.chat_message("user"):
+            if st.session_state.language == "Arabic":
+                st.markdown(f'<div class="rtl-text">{prompt}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(prompt)
+        
+        # Get AI response
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                # Create a context-aware prompt for the health assistant
+                health_context = ""
+                
+                if health_data_exists:
+                    health_data = st.session_state.health_data
+                    health_context = f"""
+    Patient Health Context:
+    - Age: {health_data.get('age', 'Not provided')}
+    - Gender: {health_data.get('gender', 'Not provided')}
+    - BMI: {health_data.get('bmi', 'Not provided')}
+    - Diabetes Risk: {health_data.get('risk', 'Not calculated')}
+    - Blood Pressure: {'High' if health_data.get('HighBP') == 'Yes' else 'Normal'}
+    - Cholesterol: {'High' if health_data.get('HighChol') == 'Yes' else 'Normal'}
+    - Physical Activity: {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}
+    - Diet: Fruits: {'Yes' if health_data.get('Fruits') == 'Yes' else 'No'}, Vegetables: {'Yes' if health_data.get('Veggies') == 'Yes' else 'No'}
+    - General Health: {health_data.get('GenHlth', 'Not provided')}/5
+    - Smoking: {'Yes' if health_data.get('Smoker') == 'Yes' else 'No'}
+    - Alcohol: {'Heavy' if health_data.get('HvyAlcoholConsump') == 'Yes' else 'Moderate/None'}
     
-    # Display user message with RTL if Arabic
-    with st.chat_message("user"):
-        if st.session_state.language == "Arabic":
-            st.markdown(f'<div class="rtl-text">{prompt}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(prompt)
+    """
+                
+                # Stronger language enforcement in the prompt
+                language_instruction = ""
+                if st.session_state.language != "English":
+                    language_instruction = f"""
+    IMPORTANT LANGUAGE INSTRUCTION: 
+    - You MUST respond exclusively in {st.session_state.language}. 
+    - Do NOT include any words, phrases, or sentences in any other language.
+    - If you cannot respond fully in {st.session_state.language}, say so and ask the user to rephrase in English.
+    - This is critical for user understanding and safety.
+    """
+                
+                full_prompt = f"""
+    You are a friendly and knowledgeable health assistant specializing in diabetes prevention and management.
+    Provide helpful, evidence-based advice about nutrition, exercise, and lifestyle changes.
+    Always remind users to consult healthcare professionals for medical advice.
     
-    # Get AI response
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            # Create a context-aware prompt for the health assistant
-            health_context = ""
-            
-            if health_data_exists:
-                health_data = st.session_state.health_data
-                health_context = f"""
-Patient Health Context:
-- Age: {health_data.get('age', 'Not provided')}
-- Gender: {health_data.get('gender', 'Not provided')}
-- BMI: {health_data.get('bmi', 'Not provided')}
-- Diabetes Risk: {health_data.get('risk', 'Not calculated')}
-- Blood Pressure: {'High' if health_data.get('HighBP') == 'Yes' else 'Normal'}
-- Cholesterol: {'High' if health_data.get('HighChol') == 'Yes' else 'Normal'}
-- Physical Activity: {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}
-- Diet: Fruits: {'Yes' if health_data.get('Fruits') == 'Yes' else 'No'}, Vegetables: {'Yes' if health_data.get('Veggies') == 'Yes' else 'No'}
-- General Health: {health_data.get('GenHlth', 'Not provided')}/5
-- Smoking: {'Yes' if health_data.get('Smoker') == 'Yes' else 'No'}
-- Alcohol: {'Heavy' if health_data.get('HvyAlcoholConsump') == 'Yes' else 'Moderate/None'}
-
-"""
-            
-            # Stronger language enforcement in the prompt
-            language_instruction = ""
-            if st.session_state.language != "English":
-                language_instruction = f"""
-IMPORTANT LANGUAGE INSTRUCTION: 
-- You MUST respond exclusively in {st.session_state.language}. 
-- Do NOT include any words, phrases, or sentences in any other language.
-- If you cannot respond fully in {st.session_state.language}, say so and ask the user to rephrase in English.
-- This is critical for user understanding and safety.
-"""
-            
-            full_prompt = f"""
-You are a friendly and knowledgeable health assistant specializing in diabetes prevention and management.
-Provide helpful, evidence-based advice about nutrition, exercise, and lifestyle changes.
-Always remind users to consult healthcare professionals for medical advice.
-
-{language_instruction}
-
-{health_context}
-Current conversation context: {st.session_state.messages[-3:] if len(st.session_state.messages) > 3 else 'New conversation'}
-
-User question: {prompt}
-
-Please provide a helpful, concise response focused on diabetes prevention and management.
-"""
-            
-            # Add language instruction if not English
-            if st.session_state.language != "English":
-                full_prompt += f"\n\nRemember: Respond ONLY in {st.session_state.language}."
-            
-            full_response = invoke_llama(full_prompt)
+    {language_instruction}
+    
+    {health_context}
+    Current conversation context: {st.session_state.messages[-3:] if len(st.session_state.messages) > 3 else 'New conversation'}
+    
+    User question: {prompt}
+    
+    Please provide a helpful, concise response focused on diabetes prevention and management.
+    """
+                
+                # Add language instruction if not English
+                if st.session_state.language != "English":
+                    full_prompt += f"\n\nRemember: Respond ONLY in {st.session_state.language}."
+                
+                full_response = invoke_llama(full_prompt)
             
             # Post-process response to remove any mixed language content
             if st.session_state.language != "English":
