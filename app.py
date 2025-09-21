@@ -233,12 +233,14 @@ st.set_page_config(
 
 # Sidebar navigation
 with st.sidebar:
+    st.title("DiaBot AI")
+    st.markdown("---")
+
     st.image("DIaBot Logo/logo.png", width=200)
     st.markdown("---")
     
-    st.title("DiaBot AI")
-    st.markdown("---")
     page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant", "Health Education"])
+    
     
     st.markdown("---")
     st.markdown("### Malaysian Resources")
