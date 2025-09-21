@@ -829,8 +829,11 @@ elif page == "AI Health Assistant":
             st.session_state.show_quick_actions = True
             st.rerun()
     
+    # Apply appropriate text direction based on language
     if st.session_state.language == "Arabic":
         st.markdown('<div class="arabic-input">', unsafe_allow_html=True)
+    elif st.session_state.language in ["Chinese", "Japanese", "Korean"]:
+        st.markdown('<div class="cjk-text">', unsafe_allow_html=True)
     
     health_data_exists = "health_data" in st.session_state
     
@@ -893,10 +896,13 @@ elif page == "AI Health Assistant":
         with st.chat_message(message["role"]):
             if message.get("language") == "Arabic":
                 st.markdown(f'<div class="rtl-text">{message["content"]}</div>', unsafe_allow_html=True)
+            elif message.get("language") in ["Chinese", "Japanese", "Korean"]:
+                st.markdown(f'<div class="cjk-text">{message["content"]}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(message["content"])
     
-    if st.session_state.language == "Arabic":
+    # Close the language-specific divs
+    if st.session_state.language in ["Arabic", "Chinese", "Japanese", "Korean"]:
         st.markdown('</div>', unsafe_allow_html=True)
     
     def invoke_llama(prompt, max_tokens=800, temperature=0.5):
@@ -941,6 +947,8 @@ elif page == "AI Health Assistant":
         with st.chat_message("user"):
             if st.session_state.language == "Arabic":
                 st.markdown(f'<div class="rtl-text">{prompt}</div>', unsafe_allow_html=True)
+            elif st.session_state.language in ["Chinese", "Japanese", "Korean"]:
+                st.markdown(f'<div class="cjk-text">{prompt}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(prompt)
         
@@ -996,22 +1004,43 @@ Please provide a helpful, concise response focused on diabetes prevention and ma
                 
                 full_response = invoke_llama(full_prompt)
                 
+                # For CJK languages (Chinese, Japanese, Korean), we need a different approach
+                # to detect mixed languages since the regex for English words won't work well
                 if st.session_state.language != "English":
-                    english_words = r'\b(if|the|and|or|but|is|are|was|were|to|for|of|in|on|at|by|with|about|against|between|into|through|during|before|after|above|below|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now)\b'
-                    
-                    english_matches = re.findall(english_words, full_response, re.IGNORECASE)
-                    if english_matches and len(english_matches) > 3:
-                        retry_prompt = f"""
+                    if st.session_state.language in ["Chinese", "Japanese", "Korean"]:
+                        # Simple check for CJK: if the response contains mostly Latin characters
+                        # it's probably in English instead of the requested language
+                        latin_chars = sum(1 for c in full_response if 'a' <= c <= 'z' or 'A' <= c <= 'Z')
+                        total_chars = max(1, len(full_response))  # Avoid division by zero
+                        
+                        if latin_chars / total_chars > 0.5:  # If more than 50% Latin characters
+                            retry_prompt = f"""
+The previous response was not in {st.session_state.language}. Please provide a response in {st.session_state.language} ONLY.
+
+Original question: {prompt}
+
+Please respond in {st.session_state.language} only.
+"""
+                            full_response = invoke_llama(retry_prompt)
+                    else:
+                        # For other non-English languages, use the original English word detection
+                        english_words = r'\b(if|the|and|or|but|is|are|was|were|to|for|of|in|on|at|by|with|about|against|between|into|through|during|before|after|above|below|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now)\b'
+                        
+                        english_matches = re.findall(english_words, full_response, re.IGNORECASE)
+                        if english_matches and len(english_matches) > 3:
+                            retry_prompt = f"""
 The previous response contained mixed languages. Please provide a response in {st.session_state.language} ONLY, without any English or other language words.
 
 Original question: {prompt}
 
 Please respond in {st.session_state.language} only.
 """
-                        full_response = invoke_llama(retry_prompt)
+                            full_response = invoke_llama(retry_prompt)
                 
                 if st.session_state.language == "Arabic":
                     st.markdown(f'<div class="rtl-text">{full_response}</div>', unsafe_allow_html=True)
+                elif st.session_state.language in ["Chinese", "Japanese", "Korean"]:
+                    st.markdown(f'<div class="cjk-text">{full_response}</div>', unsafe_allow_html=True)
                 else:
                     st.markdown(full_response)
         
