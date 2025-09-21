@@ -953,8 +953,6 @@ elif page == "AI Health Assistant":
         if len(st.session_state.messages) == 0 or st.session_state.messages[-1]["content"] != prompt:
             st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
         
-        # 🚫 Removed duplicate user message display here
-        
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 health_context = ""
@@ -1043,10 +1041,9 @@ Original question: {prompt}
         st.session_state.show_quick_actions = False
         st.session_state.quick_action_triggered = False
     
-    # ✅ FIX: reset quick_action_triggered BEFORE processing
     if st.session_state.quick_action_triggered and len(st.session_state.messages) > 0 and st.session_state.messages[-1]["role"] == "user":
         user_message = st.session_state.messages[-1]["content"]
-        st.session_state.quick_action_triggered = False  # reset here
+        st.session_state.quick_action_triggered = False 
         process_user_input(user_message)
         st.rerun()
     
