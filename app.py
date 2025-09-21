@@ -315,7 +315,7 @@ if page == "Health Analysis":
     st.subheader("Health Information")
 
     # Use tabs for better organization
-    tab1, tab2, tab3, tab4 = st.tabs(["Demographics", "Medical History", "Lifestyle", "Health Metrics"])
+    tab1, tab2, tab3, tab4 = st.tabs([" Demographics ", " Medical History ", " Lifestyle ", " Health Metrics "])
 
     with tab1:
         st.markdown("### Demographic Information")
