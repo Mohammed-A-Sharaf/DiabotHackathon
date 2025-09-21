@@ -297,17 +297,17 @@ with st.sidebar:
         st.session_state.page = "Health Analysis"
     
     # Navigation buttons - stacked vertically
-    if st.button("🏥 Health Analysis", use_container_width=True, 
+    if st.button("Health Analysis", use_container_width=True, 
                 type="primary" if st.session_state.page == "Health Analysis" else "secondary"):
         st.session_state.page = "Health Analysis"
         st.rerun()
     
-    if st.button("🤖 AI Health Assistant", use_container_width=True,
+    if st.button("AI Health Assistant", use_container_width=True,
                 type="primary" if st.session_state.page == "AI Health Assistant" else "secondary"):
         st.session_state.page = "AI Health Assistant"
         st.rerun()
     
-    if st.button("📚 Health Education", use_container_width=True,
+    if st.button("Health Education", use_container_width=True,
                 type="primary" if st.session_state.page == "Health Education" else "secondary"):
         st.session_state.page = "Health Education"
         st.rerun()
@@ -315,7 +315,6 @@ with st.sidebar:
     st.markdown("---")
     
     # Malaysian Resources section
-    st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
     st.markdown('<div class="sidebar-title">Malaysian Resources</div>', unsafe_allow_html=True)
     st.markdown('<a href="https://www.moh.gov.my/" class="sidebar-link" target="_blank">Ministry of Health Malaysia</a>', unsafe_allow_html=True)
     st.markdown('<a href="http://www.nadi.org.my/" class="sidebar-link" target="_blank">National Diabetes Institute (NADI)</a>', unsafe_allow_html=True)
@@ -323,7 +322,6 @@ with st.sidebar:
     st.markdown('</div>', unsafe_allow_html=True)
     
     # Emergency Contacts section
-    st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
     st.markdown('<div class="sidebar-title">Emergency Contacts (Malaysia)</div>', unsafe_allow_html=True)
     st.markdown('**If you\'re experiencing a medical emergency, call 999 immediately.**')
     
