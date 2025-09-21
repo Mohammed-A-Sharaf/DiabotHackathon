@@ -833,7 +833,6 @@ elif page == "AI Health Assistant":
             st.session_state.prefilled_prompt = ""
             st.rerun()
     
-    # Apply appropriate text direction based on language
     if st.session_state.language == "Arabic":
         st.markdown('<div class="arabic-input">', unsafe_allow_html=True)
     elif st.session_state.language in ["Chinese", "Japanese", "Korean"]:
@@ -858,7 +857,6 @@ elif page == "AI Health Assistant":
             st.write(f"**Activity Level:** {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}")
             st.write(f"**General Health:** {health_data.get('GenHlth', 'Not provided')}/5")
     
-    # Define quick action prompts in different languages
     quick_action_prompts = {
         "English": {
             "diet": "Provide specific dietary recommendations for diabetes prevention",
@@ -934,7 +932,6 @@ elif page == "AI Health Assistant":
             else:
                 st.markdown(message["content"])
     
-    # Close the language-specific divs
     if st.session_state.language in ["Arabic", "Chinese", "Japanese", "Korean"]:
         st.markdown('</div>', unsafe_allow_html=True)
     
@@ -1037,16 +1034,12 @@ Please provide a helpful, concise response focused on diabetes prevention and ma
                 
                 full_response = invoke_llama(full_prompt)
                 
-                # For CJK languages (Chinese, Japanese, Korean), we need a different approach
-                # to detect mixed languages since the regex for English words won't work well
                 if st.session_state.language != "English":
                     if st.session_state.language in ["Chinese", "Japanese", "Korean"]:
-                        # Simple check for CJK: if the response contains mostly Latin characters
-                        # it's probably in English instead of the requested language
                         latin_chars = sum(1 for c in full_response if 'a' <= c <= 'z' or 'A' <= c <= 'Z')
-                        total_chars = max(1, len(full_response))  # Avoid division by zero
+                        total_chars = max(1, len(full_response))
                         
-                        if latin_chars / total_chars > 0.5:  # If more than 50% Latin characters
+                        if latin_chars / total_chars > 0.5:
                             retry_prompt = f"""
 The previous response was not in {st.session_state.language}. Please provide a response in {st.session_state.language} ONLY.
 
@@ -1056,7 +1049,6 @@ Please respond in {st.session_state.language} only.
 """
                             full_response = invoke_llama(retry_prompt)
                     else:
-                        # For other non-English languages, use the original English word detection
                         english_words = r'\b(if|the|and|or|but|is|are|was|were|to|for|of|in|on|at|by|with|about|against|between|into|through|during|before|after|above|below|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now)\b'
                         
                         english_matches = re.findall(english_words, full_response, re.IGNORECASE)
@@ -1079,19 +1071,16 @@ Please respond in {st.session_state.language} only.
         
         st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
         st.session_state.show_quick_actions = False
-        st.session_state.prefilled_prompt = ""  # Clear the prefilled prompt after processing
+        st.session_state.prefilled_prompt = ""
     
     if len(st.session_state.messages) > 1 and st.session_state.messages[-1]["role"] == "user" and st.session_state.messages[-1]["content"] not in [msg["content"] for msg in st.session_state.messages[:-1]]:
         user_message = st.session_state.messages[-1]["content"]
         process_user_input(user_message)
         st.rerun()
     
-    # Create a custom chat input with prefilled text
     chat_placeholder = st.empty()
     with chat_placeholder:
-        # Create a form to handle the chat input
         with st.form(key="chat_input_form", clear_on_submit=True):
-            # Create a text input with the prefilled prompt
             user_input = st.text_input(
                 "Ask about diabetes prevention, nutrition, or exercise...",
                 value=st.session_state.prefilled_prompt,
@@ -1102,6 +1091,7 @@ Please respond in {st.session_state.language} only.
             if submit_button and user_input:
                 process_user_input(user_input)
                 st.rerun()
+                
 # -----------------------------
 # Health Education Page
 # -----------------------------
