@@ -586,7 +586,7 @@ elif page == "AI Health Assistant":
     with col1:
         st.session_state.language = st.selectbox(
             "Select Chat Language",
-            ["English", "Malay", "Chinese", "Tamil","Arabic"],
+            ["English", "Malay", "Chinese", "Tamil", "Arabic"],
             index=0
         )
     with col2:
@@ -596,6 +596,24 @@ elif page == "AI Health Assistant":
             ]
             st.session_state.show_quick_actions = True
             st.rerun()
+    
+    # Add CSS for RTL alignment when Arabic is selected
+    if st.session_state.language == "Arabic":
+        st.markdown("""
+        <style>
+            /* Right-to-left alignment for Arabic */
+            [data-testid="stChatMessageContent"] {
+                text-align: right;
+                direction: rtl;
+            }
+            
+            /* Adjust chat input for RTL */
+            .stChatInput > div > div > input {
+                text-align: right;
+                direction: rtl;
+            }
+        </style>
+        """, unsafe_allow_html=True)
     
     # Check if health data exists in session state
     health_data_exists = "health_data" in st.session_state
@@ -660,7 +678,11 @@ elif page == "AI Health Assistant":
     
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+            # Apply RTL styling if Arabic is selected
+            if st.session_state.language == "Arabic":
+                st.markdown(f'<div style="text-align: right; direction: rtl;">{message["content"]}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(message["content"])
     
     # Function to invoke Bedrock with Llama 3
     def invoke_llama(prompt, max_tokens=500, temperature=0.5):
@@ -708,9 +730,12 @@ elif page == "AI Health Assistant":
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
         
-        # Display user message
+        # Display user message with RTL if Arabic
         with st.chat_message("user"):
-            st.markdown(prompt)
+            if st.session_state.language == "Arabic":
+                st.markdown(f'<div style="text-align: right; direction: rtl;">{prompt}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(prompt)
         
         # Get AI response
         with st.chat_message("assistant"):
@@ -754,7 +779,12 @@ Please provide a helpful, concise response focused on diabetes prevention and ma
                     full_prompt += f"\n\nPlease respond in {st.session_state.language}."
                 
                 full_response = invoke_llama(full_prompt)
-                st.markdown(full_response)
+                
+                # Display response with RTL if Arabic
+                if st.session_state.language == "Arabic":
+                    st.markdown(f'<div style="text-align: right; direction: rtl;">{full_response}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(full_response)
         
         # Add assistant response to chat history
         st.session_state.messages.append({"role": "assistant", "content": full_response})
@@ -776,7 +806,6 @@ Please provide a helpful, concise response focused on diabetes prevention and ma
     if prompt:
         process_user_input(prompt)
         st.rerun()
-
 # -----------------------------
 # Health Education Page
 # -----------------------------
