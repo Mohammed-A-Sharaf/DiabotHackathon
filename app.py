@@ -869,33 +869,66 @@ elif page == "AI Health Assistant":
                 st.write(f"**Activity Level:** {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}")
                 st.write(f"**General Health:** {health_data.get('GenHlth', 'Not provided')}/5")
     
-    # Quick action prompts in different languages
+    # Quick action prompts in different languages - UPDATED WITH COMPLETE PHRASES
     quick_action_prompts = {
         "English": {
             "diet": "Provide specific dietary recommendations for diabetes prevention",
+            "diet_with_data": "Provide specific dietary recommendations for diabetes prevention for a {age} year old {gender} with a BMI of {bmi}",
             "exercise": "Suggest an appropriate exercise routine for diabetes prevention",
-            "risk": "What are the main risk factors for diabetes?"
+            "exercise_with_data": "Suggest an appropriate exercise routine for diabetes prevention for someone who is currently {activity_level}",
+            "risk": "What are the main risk factors for diabetes?",
+            "risk_with_data": "Explain my diabetes risk of {risk} and what factors contribute to it"
         },
         "Malay": {
             "diet": "Berikan cadangan diet khusus untuk pencegahan diabetes",
+            "diet_with_data": "Berikan cadangan diet khusus untuk pencegahan diabetes untuk {gender} berumur {age} tahun dengan BMI {bmi}",
             "exercise": "Cadangkan rutin senaman yang sesuai untuk pencegahan diabetes",
-            "risk": "Apakah faktor risiko utama untuk diabetes?"
+            "exercise_with_data": "Cadangkan rutin senaman yang sesuai untuk pencegahan diabetes untuk seseorang yang kini {activity_level}",
+            "risk": "Apakah faktor risiko utama untuk diabetes?",
+            "risk_with_data": "Terangkan risiko diabetes saya iaitu {risk} dan faktor-faktor yang menyumbang kepadanya"
         },
         "Chinese": {
             "diet": "提供预防糖尿病的具体饮食建议",
+            "diet_with_data": "为一名{age}岁{gender}性，BMI为{bmi}的人提供预防糖尿病的具体饮食建议",
             "exercise": "建议预防糖尿病的适当运动计划",
-            "risk": "糖尿病的主要风险因素有哪些？"
+            "exercise_with_data": "为目前{activity_level}的人建议预防糖尿病的适当运动计划",
+            "risk": "糖尿病的主要风险因素有哪些？",
+            "risk_with_data": "解释我的糖尿病风险为{risk}以及导致该风险的因素"
         },
         "Tamil": {
             "diet": "நீரிழிவு தடுப்புக்கான குறிப்பிட்ட dietary பரிந்துரைகளை வழங்கவும்",
+            "diet_with_data": "{age} வயது {gender} பாலினத்தவருக்கு, BMI {bmi} உள்ளவருக்கு நீரிழிவு தடுப்புக்கான குறிப்பிட்ட dietary பரிந்துரைகளை வழங்கவும்",
             "exercise": "நீரிழிவு நோய்த்தடுப்புக்கான ஏற்ற உடற்பயிற்சி வழிகாட்டுதல்களை பரிந்துரைக்கவும்",
-            "risk": "நீரிழிவு நோய்க்கான முக்கிய ஆபத்து காரணிகள் என்ன?"
+            "exercise_with_data": "தற்போது {activity_level} உள்ள ஒருவருக்கு நீரிழிவு நோய்த்தடுப்புக்கான ஏற்ற உடற்பயிற்சி வழிகாட்டுதல்களை பரிந்துரைக்கவும்",
+            "risk": "நீரிழிவு நோய்க்கான முக்கிய ஆபத்து காரணிகள் என்ன?",
+            "risk_with_data": "எனது நீரிழிவு நோய் ஆபத்து {risk} மற்றும் அதற்கு பங்களிக்கும் காரணிகள் பற்றி விளக்கவும்"
         },
         "Arabic": {
             "diet": "قدم توصيات غذائية محددة للوقاية من مرض السكري",
+            "diet_with_data": "قدم توصيات غذائية محددة للوقاية من مرض السكري ل{gender} يبلغ من العمر {age} عامًا مؤشر كتلة الجسم له {bmi}",
             "exercise": "اقترح روتين تمارين مناسب للوقاية من مرض السكري",
-            "risk": "ما هي عوامل الخطر الرئيسية لمرض السكري؟"
+            "exercise_with_data": "اقترح روتين تمارين مناسب للوقاية من مرض السكري لشخص {activity_level} حاليًا",
+            "risk": "ما هي عوامل الخطر الرئيسية لمرض السكري؟",
+            "risk_with_data": " اشرح مخاطر الإصابة بمرض السكري لدي وهي {risk} والعوامل التي تساهم فيها"
         }
+    }
+
+    # Gender translations for different languages
+    gender_translations = {
+        "English": {"Male": "male", "Female": "female"},
+        "Malay": {"Male": "lelaki", "Female": "perempuan"},
+        "Chinese": {"Male": "男", "Female": "女"},
+        "Tamil": {"Male": "ஆண்", "Female": "பெண்"},
+        "Arabic": {"Male": "رجل", "Female": "امرأة"}
+    }
+
+    # Activity level translations
+    activity_translations = {
+        "English": {"active": "active", "sedentary": "sedentary"},
+        "Malay": {"active": "aktif", "sedentary": "tidak aktif"},
+        "Chinese": {"active": "活跃", "sedentary": "久坐"},
+        "Tamil": {"active": "சுறுசுறுப்பான", "sedentary": "உட்கார்ந்த"},
+        "Arabic": {"active": "نشط", "sedentary": "قليل الحركة"}
     }
     
     # Quick actions section
@@ -913,15 +946,26 @@ elif page == "AI Health Assistant":
         for i, (label, key, help_text) in enumerate(actions):
             with cols[i]:
                 if st.button(label, help=help_text, use_container_width=True):
-                    prompt = quick_action_prompts[st.session_state.language][key]
-                    if health_data_exists and key != "risk":
+                    if health_data_exists:
                         if key == "diet":
-                            prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
+                            gender = gender_translations[st.session_state.language][st.session_state.health_data.get('gender')]
+                            prompt = quick_action_prompts[st.session_state.language]["diet_with_data"].format(
+                                age=st.session_state.health_data.get('age'),
+                                gender=gender,
+                                bmi=st.session_state.health_data.get('bmi')
+                            )
                         elif key == "exercise":
                             activity_level = "active" if st.session_state.health_data.get('PhysActivity') == 'Yes' else "sedentary"
-                            prompt += f" for someone who is currently {activity_level}"
-                    elif health_data_exists and key == "risk":
-                        prompt = f"Explain my diabetes risk of {st.session_state.health_data.get('risk')} and what factors contribute to it"
+                            activity_level = activity_translations[st.session_state.language][activity_level]
+                            prompt = quick_action_prompts[st.session_state.language]["exercise_with_data"].format(
+                                activity_level=activity_level
+                            )
+                        elif key == "risk":
+                            prompt = quick_action_prompts[st.session_state.language]["risk_with_data"].format(
+                                risk=st.session_state.health_data.get('risk')
+                            )
+                    else:
+                        prompt = quick_action_prompts[st.session_state.language][key]
                     
                     st.session_state.prefilled_prompt = prompt
                     st.session_state.show_quick_actions = False
