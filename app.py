@@ -567,10 +567,10 @@ elif page == "AI Health Assistant":
             st.error("Please make sure your AWS credentials are correctly set in Streamlit secrets.")
             return None
     
-    # Initialize session state for chat history
+    # Initialize session state for chat history with language tracking
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me."}
+            {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
         ]
     
     # Initialize language selection in session state
@@ -592,28 +592,37 @@ elif page == "AI Health Assistant":
     with col2:
         if st.button("Clear Chat", use_container_width=True):
             st.session_state.messages = [
-                {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me."}
+                {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
             ]
             st.session_state.show_quick_actions = True
             st.rerun()
     
     # Add CSS for RTL alignment when Arabic is selected
+    st.markdown("""
+    <style>
+        /* Right-to-left alignment for Arabic messages */
+        .rtl-text {
+            text-align: right;
+            direction: rtl;
+        }
+        
+        /* Adjust chat input for RTL when Arabic is selected */
+        .stChatInput > div > div > input {
+            text-align: left;
+            direction: ltr;
+        }
+        
+        /* Special styling for Arabic input */
+        .arabic-input .stChatInput > div > div > input {
+            text-align: right;
+            direction: rtl;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Apply Arabic input styling if Arabic is selected
     if st.session_state.language == "Arabic":
-        st.markdown("""
-        <style>
-            /* Right-to-left alignment for Arabic */
-            [data-testid="stChatMessageContent"] {
-                text-align: right;
-                direction: rtl;
-            }
-            
-            /* Adjust chat input for RTL */
-            .stChatInput > div > div > input {
-                text-align: right;
-                direction: rtl;
-            }
-        </style>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="arabic-input">', unsafe_allow_html=True)
     
     # Check if health data exists in session state
     health_data_exists = "health_data" in st.session_state
@@ -648,7 +657,7 @@ elif page == "AI Health Assistant":
                 prompt = "Provide specific dietary recommendations for diabetes prevention"
                 if health_data_exists:
                     prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
-                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
                 st.session_state.show_quick_actions = False
                 st.rerun()
         
@@ -658,7 +667,7 @@ elif page == "AI Health Assistant":
                 if health_data_exists:
                     activity_level = "active" if st.session_state.health_data.get('PhysActivity') == 'Yes' else "sedentary"
                     prompt += f" for someone who is currently {activity_level}"
-                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
                 st.session_state.show_quick_actions = False
                 st.rerun()
         
@@ -668,7 +677,7 @@ elif page == "AI Health Assistant":
                     prompt = f"Explain my diabetes risk of {st.session_state.health_data.get('risk')} and what factors contribute to it"
                 else:
                     prompt = "What are the main risk factors for diabetes?"
-                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
                 st.session_state.show_quick_actions = False
                 st.rerun()
     
@@ -678,11 +687,15 @@ elif page == "AI Health Assistant":
     
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            # Apply RTL styling if Arabic is selected
-            if st.session_state.language == "Arabic":
-                st.markdown(f'<div style="text-align: right; direction: rtl;">{message["content"]}</div>', unsafe_allow_html=True)
+            # Apply RTL styling only if the message is in Arabic
+            if message.get("language") == "Arabic":
+                st.markdown(f'<div class="rtl-text">{message["content"]}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(message["content"])
+    
+    # Close the Arabic input div if it was opened
+    if st.session_state.language == "Arabic":
+        st.markdown('</div>', unsafe_allow_html=True)
     
     # Function to invoke Bedrock with Llama 3
     def invoke_llama(prompt, max_tokens=500, temperature=0.5):
@@ -727,13 +740,13 @@ elif page == "AI Health Assistant":
     
     # Function to process user input and generate AI response
     def process_user_input(prompt):
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        # Add user message to chat history with language
+        st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
         
         # Display user message with RTL if Arabic
         with st.chat_message("user"):
             if st.session_state.language == "Arabic":
-                st.markdown(f'<div style="text-align: right; direction: rtl;">{prompt}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="rtl-text">{prompt}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(prompt)
         
@@ -780,14 +793,14 @@ Please provide a helpful, concise response focused on diabetes prevention and ma
                 
                 full_response = invoke_llama(full_prompt)
                 
-                # Display response with RTL if Arabic
+                # Display response with RTL if Arabic is the current language
                 if st.session_state.language == "Arabic":
-                    st.markdown(f'<div style="text-align: right; direction: rtl;">{full_response}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="rtl-text">{full_response}</div>', unsafe_allow_html=True)
                 else:
                     st.markdown(full_response)
         
-        # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
+        # Add assistant response to chat history with language
+        st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
         
         # Hide quick actions after first user input
         st.session_state.show_quick_actions = False
