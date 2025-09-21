@@ -370,8 +370,6 @@ if page == "Health Analysis":
         st.write(f"**BMI:** {bmi}")
     with col3:
         last_checkup = st.date_input("Last Checkup")
-        next_appointment = st.date_input("Next Appointment")
-        status = st.selectbox("Health Status", ["Healthy", "Pre-Diabetic", "Diabetic"])
 
     st.markdown("---")
     st.subheader("Health Information")
@@ -637,7 +635,6 @@ if page == "Health Analysis":
             Actual future risk may vary significantly based on lifestyle changes, medical interventions, and other factors. 
             Regular consultation with healthcare professionals is essential for accurate health assessment and planning.
             """)
-
 # -----------------------------
 # AI Health Assistant Page with AWS Bedrock Chatbot
 # -----------------------------
