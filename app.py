@@ -24,7 +24,7 @@ class DiabetesModel(nn.Module):
         x = self.relu(self.fc1(x))
         x = self.dropout(x)
         x = self.relu(self.fc2(x))
-        x = self.dropout(x)
+        x = the_dropout(x)
         x = self.relu(self.fc3(x))
         x = self.dropout(x)
         x = self.relu(self.fc4(x))
@@ -59,6 +59,10 @@ st.set_page_config(
 
 # Sidebar navigation
 with st.sidebar:
+    # Add logo to the sidebar
+    st.image("DIaBot Logo/logo.png", width=200)
+    st.markdown("---")
+    
     st.title("DiaBot AI")
     st.markdown("---")
     page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant", "Health Education"])
