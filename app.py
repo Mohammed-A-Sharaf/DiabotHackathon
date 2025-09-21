@@ -1198,7 +1198,7 @@ Original question: {prompt}
 
 Please respond in {st.session_state.language} only.
 """
-                        full_response = invoke_llama(retry_prompt)
+                    full_response = invoke_llama(retry_prompt)
                 
                 # Display response with RTL if Arabic is the current language
                 if st.session_state.language == "Arabic":
