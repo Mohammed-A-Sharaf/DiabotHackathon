@@ -739,26 +739,26 @@ elif page == "AI Health Assistant":
             return f"Error: {str(e)}"
     
     # Function to process user input and generate AI response
-    def process_user_input(prompt):
-        # Add user message to chat history with language
-        st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
-        
-        # Display user message with RTL if Arabic
-        with st.chat_message("user"):
-            if st.session_state.language == "Arabic":
-                st.markdown(f'<div class="rtl-text">{prompt}</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(prompt)
-        
-        # Get AI response
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                # Create a context-aware prompt for the health assistant
-                health_context = ""
-                
-                if health_data_exists:
-                    health_data = st.session_state.health_data
-                    health_context = f"""
+def process_user_input(prompt):
+    # Add user message to chat history with language
+    st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+    
+    # Display user message with RTL if Arabic
+    with st.chat_message("user"):
+        if st.session_state.language == "Arabic":
+            st.markdown(f'<div class="rtl-text">{prompt}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(prompt)
+    
+    # Get AI response
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            # Create a context-aware prompt for the health assistant
+            health_context = ""
+            
+            if health_data_exists:
+                health_data = st.session_state.health_data
+                health_context = f"""
 Patient Health Context:
 - Age: {health_data.get('age', 'Not provided')}
 - Gender: {health_data.get('gender', 'Not provided')}
@@ -773,11 +773,24 @@ Patient Health Context:
 - Alcohol: {'Heavy' if health_data.get('HvyAlcoholConsump') == 'Yes' else 'Moderate/None'}
 
 """
-                
-                full_prompt = f"""
+            
+            # Stronger language enforcement in the prompt
+            language_instruction = ""
+            if st.session_state.language != "English":
+                language_instruction = f"""
+IMPORTANT LANGUAGE INSTRUCTION: 
+- You MUST respond exclusively in {st.session_state.language}. 
+- Do NOT include any words, phrases, or sentences in any other language.
+- If you cannot respond fully in {st.session_state.language}, say so and ask the user to rephrase in English.
+- This is critical for user understanding and safety.
+"""
+            
+            full_prompt = f"""
 You are a friendly and knowledgeable health assistant specializing in diabetes prevention and management.
 Provide helpful, evidence-based advice about nutrition, exercise, and lifestyle changes.
 Always remind users to consult healthcare professionals for medical advice.
+
+{language_instruction}
 
 {health_context}
 Current conversation context: {st.session_state.messages[-3:] if len(st.session_state.messages) > 3 else 'New conversation'}
@@ -786,24 +799,45 @@ User question: {prompt}
 
 Please provide a helpful, concise response focused on diabetes prevention and management.
 """
+            
+            # Add language instruction if not English
+            if st.session_state.language != "English":
+                full_prompt += f"\n\nRemember: Respond ONLY in {st.session_state.language}."
+            
+            full_response = invoke_llama(full_prompt)
+            
+            # Post-process response to remove any mixed language content
+            if st.session_state.language != "English":
+                # Simple check for English words in non-English responses
+                # This is a basic approach - for production, you might want a more sophisticated solution
+                import re
+                # Common English words that might appear
+                english_words = r'\b(if|the|and|or|but|is|are|was|were|to|for|of|in|on|at|by|with|about|against|between|into|through|during|before|after|above|below|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now)\b'
                 
-                # Add language instruction if not English
-                if st.session_state.language != "English":
-                    full_prompt += f"\n\nPlease respond in {st.session_state.language}."
-                
-                full_response = invoke_llama(full_prompt)
-                
-                # Display response with RTL if Arabic is the current language
-                if st.session_state.language == "Arabic":
-                    st.markdown(f'<div class="rtl-text">{full_response}</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown(full_response)
-        
-        # Add assistant response to chat history with language
-        st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
-        
-        # Hide quick actions after first user input
-        st.session_state.show_quick_actions = False
+                # Check if there are English words in the response
+                english_matches = re.findall(english_words, full_response, re.IGNORECASE)
+                if english_matches and len(english_matches) > 3:  # More than 3 English words suggests mixed language
+                    # Request a cleaner response
+                    retry_prompt = f"""
+The previous response contained mixed languages. Please provide a response in {st.session_state.language} ONLY, without any English or other language words.
+
+Original question: {prompt}
+
+Please respond in {st.session_state.language} only.
+"""
+                    full_response = invoke_llama(retry_prompt)
+            
+            # Display response with RTL if Arabic is the current language
+            if st.session_state.language == "Arabic":
+                st.markdown(f'<div class="rtl-text">{full_response}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(full_response)
+    
+    # Add assistant response to chat history with language
+    st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
+    
+    # Hide quick actions after first user input
+    st.session_state.show_quick_actions = False
     
     # Check if we need to process a quick action prompt
     if len(st.session_state.messages) > 1 and st.session_state.messages[-1]["role"] == "user" and st.session_state.messages[-1]["content"] not in [msg["content"] for msg in st.session_state.messages[:-1]]:
