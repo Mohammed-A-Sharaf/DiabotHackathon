@@ -814,7 +814,6 @@ elif page == "AI Health Assistant":
     if "show_quick_actions" not in st.session_state:
         st.session_state.show_quick_actions = True
     
-    # Track if a quick action was just triggered
     if "quick_action_triggered" not in st.session_state:
         st.session_state.quick_action_triggered = False
     
@@ -1014,36 +1013,26 @@ Please provide a helpful, concise response focused on diabetes prevention and ma
                 
                 full_response = invoke_llama(full_prompt)
                 
-                # For CJK languages (Chinese, Japanese, Korean), we need a different approach
-                # to detect mixed languages since the regex for English words won't work well
+                # Handle incorrect language responses
                 if st.session_state.language != "English":
                     if st.session_state.language in ["Chinese", "Japanese", "Korean"]:
-                        # Simple check for CJK: if the response contains mostly Latin characters
-                        # it's probably in English instead of the requested language
                         latin_chars = sum(1 for c in full_response if 'a' <= c <= 'z' or 'A' <= c <= 'Z')
-                        total_chars = max(1, len(full_response))  # Avoid division by zero
-                        
-                        if latin_chars / total_chars > 0.5:  # If more than 50% Latin characters
+                        total_chars = max(1, len(full_response))
+                        if latin_chars / total_chars > 0.5:
                             retry_prompt = f"""
 The previous response was not in {st.session_state.language}. Please provide a response in {st.session_state.language} ONLY.
 
 Original question: {prompt}
-
-Please respond in {st.session_state.language} only.
 """
                             full_response = invoke_llama(retry_prompt)
                     else:
-                        # For other non-English languages, use the original English word detection
                         english_words = r'\b(if|the|and|or|but|is|are|was|were|to|for|of|in|on|at|by|with|about|against|between|into|through|during|before|after|above|below|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now)\b'
-                        
                         english_matches = re.findall(english_words, full_response, re.IGNORECASE)
                         if english_matches and len(english_matches) > 3:
                             retry_prompt = f"""
-The previous response contained mixed languages. Please provide a response in {st.session_state.language} ONLY, without any English or other language words.
+The previous response contained mixed languages. Please provide a response in {st.session_state.language} ONLY.
 
 Original question: {prompt}
-
-Please respond in {st.session_state.language} only.
 """
                             full_response = invoke_llama(retry_prompt)
                 
@@ -1060,9 +1049,10 @@ Please respond in {st.session_state.language} only.
         st.session_state.show_quick_actions = False
         st.session_state.quick_action_triggered = False
     
-    # Only process messages if a quick action was triggered or there's a new chat input
+    # ✅ FIX: reset quick_action_triggered BEFORE processing
     if st.session_state.quick_action_triggered and len(st.session_state.messages) > 0 and st.session_state.messages[-1]["role"] == "user":
         user_message = st.session_state.messages[-1]["content"]
+        st.session_state.quick_action_triggered = False  # reset here
         process_user_input(user_message)
         st.rerun()
     
@@ -1073,6 +1063,7 @@ Please respond in {st.session_state.language} only.
     if prompt:
         process_user_input(prompt)
         st.rerun()
+
 
 # -----------------------------
 # Health Education Page
