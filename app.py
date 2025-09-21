@@ -785,7 +785,7 @@ if page == "Health Analysis":
 # AI Health Assistant Page with AWS Bedrock Chatbot
 # -----------------------------
 elif page == "AI Health Assistant":
-    st.markdown("## AI Health Assistant")
+    st.markdown("## AI Health Assistant (Powered by AWS Bedrock)")
     
     @st.cache_resource
     def get_bedrock_client():
