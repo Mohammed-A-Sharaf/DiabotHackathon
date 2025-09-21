@@ -52,7 +52,7 @@ model = load_model()
 # -----------------------------
 st.set_page_config(
     page_title="DiaBot AI - Diabetes Risk Dashboard",
-    page_icon="DIaBot Logo/logo.png",
+    page_icon="Logo Header/HeaderLogo.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
