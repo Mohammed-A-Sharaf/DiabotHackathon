@@ -234,8 +234,6 @@ st.set_page_config(
 # Sidebar navigation
 with st.sidebar:
     st.title("DiaBot AI")
-    st.markdown("---")
-
     st.image("DIaBot Logo/logo.png", width=200)
     st.markdown("---")
     
