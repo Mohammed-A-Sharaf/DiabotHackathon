@@ -783,14 +783,14 @@ if page == "Health Analysis":
 # -----------------------------
 elif page == "AI Health Assistant":
     st.markdown("## AI Health Assistant")
-
+    
     @st.cache_resource
     def get_bedrock_client():
         try:
             aws_access_key = st.secrets["AWS_ACCESS_KEY_ID"]
             aws_secret_key = st.secrets["AWS_SECRET_ACCESS_KEY"]
             region = st.secrets["AWS_DEFAULT_REGION"]
-
+            
             client = boto3.client(
                 service_name='bedrock-runtime',
                 region_name=region,
@@ -802,26 +802,21 @@ elif page == "AI Health Assistant":
             st.error(f"Error initializing AWS Bedrock client: {e}")
             st.error("Please make sure your AWS credentials are correctly set in Streamlit secrets.")
             return None
-
-    # --- initialize session state keys ---
+    
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {
-                "role": "assistant",
-                "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.",
-                "language": "English"
-            }
+            {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
         ]
+    
     if "language" not in st.session_state:
         st.session_state.language = "English"
+    
     if "show_quick_actions" not in st.session_state:
         st.session_state.show_quick_actions = True
-    if "quick_action_triggered" not in st.session_state:
-        st.session_state.quick_action_triggered = False
-    # NEW: store pending prompt when a quick action is clicked (do NOT append to messages in the click handler)
-    if "pending_user_prompt" not in st.session_state:
-        st.session_state.pending_user_prompt = None
-
+        
+    if "prefilled_prompt" not in st.session_state:
+        st.session_state.prefilled_prompt = ""
+    
     col1, col2 = st.columns([3, 1])
     with col1:
         st.session_state.language = st.selectbox(
@@ -832,83 +827,104 @@ elif page == "AI Health Assistant":
     with col2:
         if st.button("Clear Chat", use_container_width=True):
             st.session_state.messages = [
-                {
-                    "role": "assistant",
-                    "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.",
-                    "language": "English"
-                }
+                {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
             ]
             st.session_state.show_quick_actions = True
-            st.session_state.quick_action_triggered = False
-            st.session_state.pending_user_prompt = None
-            st.experimental_rerun()
-
+            st.session_state.prefilled_prompt = ""
+            st.rerun()
+    
     # Apply appropriate text direction based on language
     if st.session_state.language == "Arabic":
         st.markdown('<div class="arabic-input">', unsafe_allow_html=True)
     elif st.session_state.language in ["Chinese", "Japanese", "Korean"]:
         st.markdown('<div class="cjk-text">', unsafe_allow_html=True)
-
+    
     health_data_exists = "health_data" in st.session_state
-
+    
     if health_data_exists:
         st.info("### Your Health Summary")
         health_data = st.session_state.health_data
-
+        
         col1, col2 = st.columns(2)
         with col1:
             st.write(f"**Age:** {health_data.get('age', 'Not provided')}")
             st.write(f"**Gender:** {health_data.get('gender', 'Not provided')}")
             st.write(f"**BMI:** {health_data.get('bmi', 'Not provided')}")
             st.write(f"**Diabetes Risk:** {health_data.get('risk', 'Not calculated')}")
+        
         with col2:
             st.write(f"**Blood Pressure:** {'High' if health_data.get('HighBP') == 'Yes' else 'Normal'}")
             st.write(f"**Cholesterol:** {'High' if health_data.get('HighChol') == 'Yes' else 'Normal'}")
             st.write(f"**Activity Level:** {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}")
             st.write(f"**General Health:** {health_data.get('GenHlth', 'Not provided')}/5")
-
-    # Quick Actions UI — DO NOT append messages here; set pending_user_prompt instead
+    
+    # Define quick action prompts in different languages
+    quick_action_prompts = {
+        "English": {
+            "diet": "Provide specific dietary recommendations for diabetes prevention",
+            "exercise": "Suggest an appropriate exercise routine",
+            "risk": "What are the main risk factors for diabetes?"
+        },
+        "Malay": {
+            "diet": "Berikan cadangan diet khusus untuk pencegahan diabetes",
+            "exercise": "Cadangkan rutin senaman yang sesuai",
+            "risk": "Apakah faktor risiko utama untuk diabetes?"
+        },
+        "Chinese": {
+            "diet": "提供预防糖尿病的具体饮食建议",
+            "exercise": "建议适当的运动计划",
+            "risk": "糖尿病的主要风险因素有哪些？"
+        },
+        "Tamil": {
+            "diet": "நீரிழிவு தடுப்புக்கான குறிப்பிட்ட dietary பரிந்துரைகளை வழங்கவும்",
+            "exercise": "பொருத்தமான உடற்பயிற்சி வழிகாட்டுதல்களை பரிந்துரைக்கவும்",
+            "risk": "நீரிழிவு நோய்க்கான முக்கிய ஆபத்து காரணிகள் என்ன?"
+        },
+        "Arabic": {
+            "diet": "قدم توصيات غذائية محددة للوقاية من مرض السكري",
+            "exercise": "اقترح روتين تمارين مناسب",
+            "risk": "ما هي عوامل الخطر الرئيسية لمرض السكري؟"
+        }
+    }
+    
     if st.session_state.show_quick_actions and len(st.session_state.messages) == 1:
         st.markdown("---")
         st.markdown("### Quick Actions")
+        
         col1, col2, col3 = st.columns(3)
-
+        
         with col1:
             if st.button("Get Diet Recommendations", help="Get personalized diet suggestions based on your health profile"):
-                prompt = "Provide specific dietary recommendations for diabetes prevention"
+                prompt = quick_action_prompts[st.session_state.language]["diet"]
                 if health_data_exists:
                     prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
-                st.session_state.pending_user_prompt = prompt
+                st.session_state.prefilled_prompt = prompt
                 st.session_state.show_quick_actions = False
-                st.session_state.quick_action_triggered = True
-                st.experimental_rerun()
-
+                st.rerun()
+        
         with col2:
             if st.button("Exercise Plan", help="Get a personalized exercise plan"):
-                prompt = "Suggest an appropriate exercise routine"
+                prompt = quick_action_prompts[st.session_state.language]["exercise"]
                 if health_data_exists:
                     activity_level = "active" if st.session_state.health_data.get('PhysActivity') == 'Yes' else "sedentary"
                     prompt += f" for someone who is currently {activity_level}"
-                st.session_state.pending_user_prompt = prompt
+                st.session_state.prefilled_prompt = prompt
                 st.session_state.show_quick_actions = False
-                st.session_state.quick_action_triggered = True
-                st.experimental_rerun()
-
+                st.rerun()
+        
         with col3:
             if st.button("Risk Explanation", help="Understand your diabetes risk factors"):
                 if health_data_exists:
                     prompt = f"Explain my diabetes risk of {st.session_state.health_data.get('risk')} and what factors contribute to it"
                 else:
-                    prompt = "What are the main risk factors for diabetes?"
-                st.session_state.pending_user_prompt = prompt
+                    prompt = quick_action_prompts[st.session_state.language]["risk"]
+                st.session_state.prefilled_prompt = prompt
                 st.session_state.show_quick_actions = False
-                st.session_state.quick_action_triggered = True
-                st.experimental_rerun()
-
+                st.rerun()
+    
     st.markdown("---")
     st.markdown("### Chat with Health Assistant")
-
-    # Render chat history (only once per message)
+    
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             if message.get("language") == "Arabic":
@@ -917,20 +933,19 @@ elif page == "AI Health Assistant":
                 st.markdown(f'<div class="cjk-text">{message["content"]}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(message["content"])
-
+    
     # Close the language-specific divs
     if st.session_state.language in ["Arabic", "Chinese", "Japanese", "Korean"]:
         st.markdown('</div>', unsafe_allow_html=True)
-
-    # --- LLM invocation helper ---
+    
     def invoke_llama(prompt, max_tokens=800, temperature=0.5):
         try:
             bedrock_client = get_bedrock_client()
             if bedrock_client is None:
                 return "Error connecting to AI service. Please try again later."
-
+            
             language_instruction = f"Please respond in {st.session_state.language}." if st.session_state.language != "English" else ""
-
+            
             formatted_prompt = f"""
 <|begin_of_text|><|start_header_id|>user<|end_header_id|>
 {prompt}
@@ -938,40 +953,30 @@ elif page == "AI Health Assistant":
 <|eot_id|>
 <|start_header_id|>assistant<|end_header_id|>
 """
-
+            
             body = json.dumps({
                 "prompt": formatted_prompt,
                 "max_gen_len": max_tokens,
                 "temperature": temperature,
                 "top_p": 0.9
             })
-
+            
             response = bedrock_client.invoke_model(
                 modelId='meta.llama3-70b-instruct-v1:0',
                 body=body,
                 contentType='application/json',
                 accept='application/json'
             )
-
+            
             response_body = json.loads(response['body'].read())
             return response_body.get('generation', 'No response generated')
-
+            
         except Exception as e:
             return f"Error: {str(e)}"
-
-    # --- Process user input (display user message once, call LLM, append assistant reply) ---
+    
     def process_user_input(prompt):
-        prompt = (prompt or "").strip()
-        if not prompt:
-            return
-
-        # Avoid adding exact duplicates (normalize whitespace)
-        last_content = st.session_state.messages[-1]["content"].strip() if st.session_state.messages else ""
-        if last_content != prompt or st.session_state.messages[-1]["role"] != "user":
-            # Append user message to history
-            st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
-
-        # Immediately display the user message so it appears in the chat now
+        st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+        
         with st.chat_message("user"):
             if st.session_state.language == "Arabic":
                 st.markdown(f'<div class="rtl-text">{prompt}</div>', unsafe_allow_html=True)
@@ -979,37 +984,39 @@ elif page == "AI Health Assistant":
                 st.markdown(f'<div class="cjk-text">{prompt}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(prompt)
-
-        # Build health context and call LLM
+        
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 health_context = ""
+                
                 if health_data_exists:
-                    hd = st.session_state.health_data
+                    health_data = st.session_state.health_data
                     health_context = f"""
 Patient Health Context:
-- Age: {hd.get('age', 'Not provided')}
-- Gender: {hd.get('gender', 'Not provided')}
-- BMI: {hd.get('bmi', 'Not provided')}
-- Diabetes Risk: {hd.get('risk', 'Not calculated')}
-- Blood Pressure: {'High' if hd.get('HighBP') == 'Yes' else 'Normal'}
-- Cholesterol: {'High' if hd.get('HighChol') == 'Yes' else 'Normal'}
-- Physical Activity: {'Active' if hd.get('PhysActivity') == 'Yes' else 'Inactive'}
-- Diet: Fruits: {'Yes' if hd.get('Fruits') == 'Yes' else 'No'}, Vegetables: {'Yes' if hd.get('Veggies') == 'Yes' else 'No'}
-- General Health: {hd.get('GenHlth', 'Not provided')}/5
-- Smoking: {'Yes' if hd.get('Smoker') == 'Yes' else 'No'}
-- Alcohol: {'Heavy' if hd.get('HvyAlcoholConsump') == 'Yes' else 'Moderate/None'}
-"""
+- Age: {health_data.get('age', 'Not provided')}
+- Gender: {health_data.get('gender', 'Not provided')}
+- BMI: {health_data.get('bmi', 'Not provided')}
+- Diabetes Risk: {health_data.get('risk', 'Not calculated')}
+- Blood Pressure: {'High' if health_data.get('HighBP') == 'Yes' else 'Normal'}
+- Cholesterol: {'High' if health_data.get('HighChol') == 'Yes' else 'Normal'}
+- Physical Activity: {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}
+- Diet: Fruits: {'Yes' if health_data.get('Fruits') == 'Yes' else 'No'}, Vegetables: {'Yes' if health_data.get('Veggies') == 'Yes' else 'No'}
+- General Health: {health_data.get('GenHlth', 'Not provided')}/5
+- Smoking: {'Yes' if health_data.get('Smoker') == 'Yes' else 'No'}
+- Alcohol: {'Heavy' if health_data.get('HvyAlcoholConsump') == 'Yes' else 'Moderate/None'}
 
+"""
+                
                 language_instruction = ""
                 if st.session_state.language != "English":
                     language_instruction = f"""
-IMPORTANT LANGUAGE INSTRUCTION:
-- You MUST respond exclusively in {st.session_state.language}.
+IMPORTANT LANGUAGE INSTRUCTION: 
+- You MUST respond exclusively in {st.session_state.language}. 
 - Do NOT include any words, phrases, or sentences in any other language.
 - If you cannot respond fully in {st.session_state.language}, say so and ask the user to rephrase in English.
+- This is critical for user understanding and safety.
 """
-
+                
                 full_prompt = f"""
 You are a friendly and knowledgeable health assistant specializing in diabetes prevention and management.
 Provide helpful, evidence-based advice about nutrition, exercise, and lifestyle changes.
@@ -1024,69 +1031,77 @@ User question: {prompt}
 
 Please provide a helpful, concise response focused on diabetes prevention and management.
 """
+                
                 if st.session_state.language != "English":
                     full_prompt += f"\n\nRemember: Respond ONLY in {st.session_state.language}."
-
+                
                 full_response = invoke_llama(full_prompt)
-
-                # Language checks and possible retry (kept as in your original logic)
+                
+                # For CJK languages (Chinese, Japanese, Korean), we need a different approach
+                # to detect mixed languages since the regex for English words won't work well
                 if st.session_state.language != "English":
                     if st.session_state.language in ["Chinese", "Japanese", "Korean"]:
+                        # Simple check for CJK: if the response contains mostly Latin characters
+                        # it's probably in English instead of the requested language
                         latin_chars = sum(1 for c in full_response if 'a' <= c <= 'z' or 'A' <= c <= 'Z')
-                        total_chars = max(1, len(full_response))
-                        if latin_chars / total_chars > 0.5:
+                        total_chars = max(1, len(full_response))  # Avoid division by zero
+                        
+                        if latin_chars / total_chars > 0.5:  # If more than 50% Latin characters
                             retry_prompt = f"""
 The previous response was not in {st.session_state.language}. Please provide a response in {st.session_state.language} ONLY.
 
 Original question: {prompt}
+
+Please respond in {st.session_state.language} only.
 """
                             full_response = invoke_llama(retry_prompt)
                     else:
+                        # For other non-English languages, use the original English word detection
                         english_words = r'\b(if|the|and|or|but|is|are|was|were|to|for|of|in|on|at|by|with|about|against|between|into|through|during|before|after|above|below|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now)\b'
+                        
                         english_matches = re.findall(english_words, full_response, re.IGNORECASE)
                         if english_matches and len(english_matches) > 3:
                             retry_prompt = f"""
-The previous response contained mixed languages. Please provide a response in {st.session_state.language} ONLY.
+The previous response contained mixed languages. Please provide a response in {st.session_state.language} ONLY, without any English or other language words.
 
 Original question: {prompt}
+
+Please respond in {st.session_state.language} only.
 """
                             full_response = invoke_llama(retry_prompt)
-
-                # render assistant reply
+                
                 if st.session_state.language == "Arabic":
                     st.markdown(f'<div class="rtl-text">{full_response}</div>', unsafe_allow_html=True)
                 elif st.session_state.language in ["Chinese", "Japanese", "Korean"]:
                     st.markdown(f'<div class="cjk-text">{full_response}</div>', unsafe_allow_html=True)
                 else:
                     st.markdown(full_response)
-
-        # Append assistant reply to history (avoid exact consecutive duplicates)
-        assistant_last = st.session_state.messages[-1]["content"].strip() if st.session_state.messages else ""
-        if assistant_last != full_response.strip() or st.session_state.messages[-1]["role"] != "assistant":
-            st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
-
+        
+        st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
         st.session_state.show_quick_actions = False
-        st.session_state.quick_action_triggered = False
-        st.session_state.pending_user_prompt = None
-
-    # --- If a quick action was clicked: process the pending prompt (this runs after process_user_input is defined) ---
-    if st.session_state.get("quick_action_triggered") and st.session_state.get("pending_user_prompt"):
-        # Grab and clear pending prompt, reset flag BEFORE processing
-        prompt_to_process = st.session_state.pending_user_prompt
-        st.session_state.pending_user_prompt = None
-        st.session_state.quick_action_triggered = False
-        process_user_input(prompt_to_process)
-        # No rerun here (we already displayed the user + assistant in this run)
-
-    # Chat input at the bottom
+        st.session_state.prefilled_prompt = ""  # Clear the prefilled prompt after processing
+    
+    if len(st.session_state.messages) > 1 and st.session_state.messages[-1]["role"] == "user" and st.session_state.messages[-1]["content"] not in [msg["content"] for msg in st.session_state.messages[:-1]]:
+        user_message = st.session_state.messages[-1]["content"]
+        process_user_input(user_message)
+        st.rerun()
+    
+    # Create a custom chat input with prefilled text
     chat_placeholder = st.empty()
     with chat_placeholder:
-        prompt = st.chat_input("Ask about diabetes prevention, nutrition, or exercise...")
-
-    if prompt:
-        process_user_input(prompt)
-
-
+        # Create a form to handle the chat input
+        with st.form(key="chat_input_form", clear_on_submit=True):
+            # Create a text input with the prefilled prompt
+            user_input = st.text_input(
+                "Ask about diabetes prevention, nutrition, or exercise...",
+                value=st.session_state.prefilled_prompt,
+                key="chat_input_field"
+            )
+            submit_button = st.form_submit_button("Send")
+            
+            if submit_button and user_input:
+                process_user_input(user_input)
+                st.rerun()
 # -----------------------------
 # Health Education Page
 # -----------------------------
