@@ -953,13 +953,7 @@ elif page == "AI Health Assistant":
         if len(st.session_state.messages) == 0 or st.session_state.messages[-1]["content"] != prompt:
             st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
         
-        with st.chat_message("user"):
-            if st.session_state.language == "Arabic":
-                st.markdown(f'<div class="rtl-text">{prompt}</div>', unsafe_allow_html=True)
-            elif st.session_state.language in ["Chinese", "Japanese", "Korean"]:
-                st.markdown(f'<div class="cjk-text">{prompt}</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(prompt)
+        # 🚫 Removed duplicate user message display here
         
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
@@ -1063,7 +1057,6 @@ Original question: {prompt}
     if prompt:
         process_user_input(prompt)
         st.rerun()
-
 
 # -----------------------------
 # Health Education Page
