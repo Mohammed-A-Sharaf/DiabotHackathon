@@ -1,5 +1,3 @@
-I want to add a future statistics feature. I want it to run the prediction model multiple times with predicted future values and give a 5 year graph. this is the current code.
-
 import streamlit as st
 import torch
 import torch.nn as nn
@@ -7,190 +5,6 @@ import pandas as pd
 import numpy as np
 import json
 import boto3
-import re
-
-# -----------------------------
-# Custom CSS Styling
-# -----------------------------
-st.markdown("""
-<style>
-    /* Main styling */
-    .main {
-        background-color: #f8f9fa;
-    }
-    
-    /* Sidebar styling */
-    .css-1d391kg {
-        background-color: #1e40af;
-        color: white;
-    }
-    
-    .css-1d391kg h1, .css-1d391kg h2, .css-1d391kg h3, .css-1d391kg h4, .css-1d391kg h5, .css-1d391kg h6 {
-        color: white;
-    }
-    
-    .css-1d391kg a {
-        color: #93c5fd;
-    }
-    
-    .css-1d391kg a:hover {
-        color: white;
-    }
-    
-    /* Button styling */
-    .stButton>button {
-        background-color: #1e40af;
-        color: white;
-        border-radius: 8px;
-        border: none;
-        padding: 10px 24px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    
-    .stButton>button:hover {
-        background-color: #1e3a8a;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    
-    /* Header styling */
-    h1, h2, h3 {
-        color: #1e40af;
-    }
-    
-    /* Card-like styling for sections */
-    .block-container {
-        padding: 2rem;
-    }
-    
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        white-space: pre-wrap;
-        background-color: #e5e7eb;
-        border-radius: 8px 8px 0 0;
-        padding: 12px 20px;  /* Increased padding for better spacing */
-        color: #374151;
-        display: flex;
-        align-items: center;  /* Vertically center text */
-        justify-content: center;  /* Horizontally center text */
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background-color: #1e40af;
-        color: white;
-    }
-    
-    /* Ensure tab text is properly aligned */
-    .stTabs [data-baseweb="tab"] > div {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-    }
-    
-    /* Right-to-left alignment for Arabic messages */
-    .rtl-text {
-        text-align: right;
-        direction: rtl;
-    }
-    
-    /* Adjust chat input for RTL when Arabic is selected */
-    .stChatInput > div > div > input {
-        text-align: left;
-        direction: ltr;
-    }
-    
-    /* Special styling for Arabic input */
-    .arabic-input .stChatInput > div > div > input {
-        text-align: right;
-        direction: rtl;
-    }
-    
-    /* Chat message styling */
-    .stChatMessage {
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-    }
-    
-    .stChatMessage [data-testid="stChatMessageContent"] {
-        padding: 1rem;
-    }
-    
-    /* Metric cards */
-    .stMetric {
-        background-color: white;
-        border-radius: 12px;
-        padding: 1rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    /* Custom success/error/warning messages */
-    .stSuccess {
-        background-color: #dcfce7;
-        color: #166534;
-        border-radius: 12px;
-        padding: 1rem;
-    }
-    
-    .stError {
-        background-color: #fee2e2;
-        color: #991b1b;
-        border-radius: 12px;
-        padding: 1rem;
-    }
-    
-    .stWarning {
-        background-color: #fef3c7;
-        color: #92400e;
-        border-radius: 12px;
-        padding: 1rem;
-    }
-    
-    /* Progress bar styling */
-    .stProgress > div > div {
-        background-color: #1e40af;
-    }
-    
-    /* Input field styling */
-    .stTextInput > div > div > input {
-        border-radius: 8px;
-    }
-    
-    .stNumberInput > div > div > input {
-        border-radius: 8px;
-    }
-    
-    .stSelectbox > div > div {
-        border-radius: 8px;
-    }
-    
-    .stSlider > div > div {
-        border-radius: 8px;
-    }
-    
-    /* Health status indicators */
-    .health-good {
-        color: #16a34a;
-        font-weight: bold;
-    }
-    
-    .health-warning {
-        color: #ca8a04;
-        font-weight: bold;
-    }
-    
-    .health-danger {
-        color: #dc2626;
-        font-weight: bold;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 # -----------------------------
 # Model Definition
@@ -237,19 +51,15 @@ model = load_model()
 # Page Config & Sidebar
 # -----------------------------
 st.set_page_config(
-    page_title="DiaBot AI - Diabetes Risk Dashboard",
-    page_icon="Logo Header/HeaderLogo.png",
+    page_title="HealthGuard AI - Diabetes Risk Dashboard",
+    page_icon="🏥",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # Sidebar navigation
 with st.sidebar:
-    # Add logo to the sidebar
-    st.image("DIaBot Logo/logo.png", width=200)
-    st.markdown("---")
-    
-    st.title("DiaBot AI")
+    st.title("HealthGuard AI")
     st.markdown("---")
     page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant", "Health Education"])
     
@@ -481,13 +291,13 @@ if page == "Health Analysis":
         
         st.success(f"Predicted Diabetes Risk: {risk:.2%}")
 
-        # Risk interpretation with custom styling
+        # Risk interpretation
         if risk < 0.25:
-            st.markdown('<div class="stSuccess">Low Risk – Maintain your healthy lifestyle.</div>', unsafe_allow_html=True)
+            st.info("Low Risk – Maintain your healthy lifestyle.")
         elif risk < 0.6:
-            st.markdown('<div class="stWarning">Moderate Risk – Consider lifestyle improvements.</div>', unsafe_allow_html=True)
+            st.warning("Moderate Risk – Consider lifestyle improvements.")
         else:
-            st.markdown('<div class="stError">High Risk – Please consult a healthcare professional.</div>', unsafe_allow_html=True)
+            st.error("High Risk – Please consult a healthcare professional.")
 
         # Probability breakdown
         st.progress(risk)
@@ -588,10 +398,10 @@ elif page == "AI Health Assistant":
             st.error("Please make sure your AWS credentials are correctly set in Streamlit secrets.")
             return None
     
-    # Initialize session state for chat history with language tracking
+    # Initialize session state for chat history
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
+            {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me."}
         ]
     
     # Initialize language selection in session state
@@ -607,20 +417,16 @@ elif page == "AI Health Assistant":
     with col1:
         st.session_state.language = st.selectbox(
             "Select Chat Language",
-            ["English", "Malay", "Chinese", "Tamil", "Arabic"],
+            ["English", "Malay", "Chinese", "Tamil"],
             index=0
         )
     with col2:
         if st.button("Clear Chat", use_container_width=True):
             st.session_state.messages = [
-                {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
+                {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me."}
             ]
             st.session_state.show_quick_actions = True
             st.rerun()
-    
-    # Apply Arabic input styling if Arabic is selected
-    if st.session_state.language == "Arabic":
-        st.markdown('<div class="arabic-input">', unsafe_allow_html=True)
     
     # Check if health data exists in session state
     health_data_exists = "health_data" in st.session_state
@@ -655,7 +461,7 @@ elif page == "AI Health Assistant":
                 prompt = "Provide specific dietary recommendations for diabetes prevention"
                 if health_data_exists:
                     prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
-                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+                st.session_state.messages.append({"role": "user", "content": prompt})
                 st.session_state.show_quick_actions = False
                 st.rerun()
         
@@ -665,7 +471,7 @@ elif page == "AI Health Assistant":
                 if health_data_exists:
                     activity_level = "active" if st.session_state.health_data.get('PhysActivity') == 'Yes' else "sedentary"
                     prompt += f" for someone who is currently {activity_level}"
-                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+                st.session_state.messages.append({"role": "user", "content": prompt})
                 st.session_state.show_quick_actions = False
                 st.rerun()
         
@@ -675,7 +481,7 @@ elif page == "AI Health Assistant":
                     prompt = f"Explain my diabetes risk of {st.session_state.health_data.get('risk')} and what factors contribute to it"
                 else:
                     prompt = "What are the main risk factors for diabetes?"
-                st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+                st.session_state.messages.append({"role": "user", "content": prompt})
                 st.session_state.show_quick_actions = False
                 st.rerun()
     
@@ -685,18 +491,10 @@ elif page == "AI Health Assistant":
     
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            # Apply RTL styling only if the message is in Arabic
-            if message.get("language") == "Arabic":
-                st.markdown(f'<div class="rtl-text">{message["content"]}</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(message["content"])
-    
-    # Close the Arabic input div if it was opened
-    if st.session_state.language == "Arabic":
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown(message["content"])
     
     # Function to invoke Bedrock with Llama 3
-    def invoke_llama(prompt, max_tokens=650, temperature=0.5):
+    def invoke_llama(prompt, max_tokens=500, temperature=0.5):
         try:
             bedrock_client = get_bedrock_client()
             if bedrock_client is None:
@@ -723,7 +521,7 @@ elif page == "AI Health Assistant":
             
             # Send the request to the Bedrock model
             response = bedrock_client.invoke_model(
-                modelId='meta.llama3-70b-instruct-v1:0',
+                modelId='meta.llama3-8b-instruct-v1:0',
                 body=body,
                 contentType='application/json',
                 accept='application/json'
@@ -738,15 +536,12 @@ elif page == "AI Health Assistant":
     
     # Function to process user input and generate AI response
     def process_user_input(prompt):
-        # Add user message to chat history with language
-        st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": prompt})
         
-        # Display user message with RTL if Arabic
+        # Display user message
         with st.chat_message("user"):
-            if st.session_state.language == "Arabic":
-                st.markdown(f'<div class="rtl-text">{prompt}</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(prompt)
+            st.markdown(prompt)
         
         # Get AI response
         with st.chat_message("assistant"):
@@ -772,23 +567,10 @@ Patient Health Context:
 
 """
                 
-                # Stronger language enforcement in the prompt
-                language_instruction = ""
-                if st.session_state.language != "English":
-                    language_instruction = f"""
-IMPORTANT LANGUAGE INSTRUCTION: 
-- You MUST respond exclusively in {st.session_state.language}. 
-- Do NOT include any words, phrases, or sentences in any other language.
-- If you cannot respond fully in {st.session_state.language}, say so and ask the user to rephrase in English.
-- This is critical for user understanding and safety.
-"""
-                
                 full_prompt = f"""
 You are a friendly and knowledgeable health assistant specializing in diabetes prevention and management.
 Provide helpful, evidence-based advice about nutrition, exercise, and lifestyle changes.
 Always remind users to consult healthcare professionals for medical advice.
-
-{language_instruction}
 
 {health_context}
 Current conversation context: {st.session_state.messages[-3:] if len(st.session_state.messages) > 3 else 'New conversation'}
@@ -800,36 +582,13 @@ Please provide a helpful, concise response focused on diabetes prevention and ma
                 
                 # Add language instruction if not English
                 if st.session_state.language != "English":
-                    full_prompt += f"\n\nRemember: Respond ONLY in {st.session_state.language}."
+                    full_prompt += f"\n\nPlease respond in {st.session_state.language}."
                 
                 full_response = invoke_llama(full_prompt)
-                
-                # Post-process response to remove any mixed language content
-                if st.session_state.language != "English":
-                    # Common English words that might appear
-                    english_words = r'\b(if|the|and|or|but|is|are|was|were|to|for|of|in|on|at|by|with|about|against|between|into|through|during|before|after|above|below|from|up|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now)\b'
-                    
-                    # Check if there are English words in the response
-                    english_matches = re.findall(english_words, full_response, re.IGNORECASE)
-                    if english_matches and len(english_matches) > 3:  # More than 3 English words suggests mixed language
-                        # Request a cleaner response
-                        retry_prompt = f"""
-The previous response contained mixed languages. Please provide a response in {st.session_state.language} ONLY, without any English or other language words.
-
-Original question: {prompt}
-
-Please respond in {st.session_state.language} only.
-"""
-                        full_response = invoke_llama(retry_prompt)
-                
-                # Display response with RTL if Arabic is the current language
-                if st.session_state.language == "Arabic":
-                    st.markdown(f'<div class="rtl-text">{full_response}</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown(full_response)
+                st.markdown(full_response)
         
-        # Add assistant response to chat history with language
-        st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
+        # Add assistant response to chat history
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
         
         # Hide quick actions after first user input
         st.session_state.show_quick_actions = False
@@ -956,4 +715,4 @@ elif page == "Health Education":
         st.markdown("### Educational Materials")
         st.markdown("- [Diabetes Malaysia Handbook](http://www.diabetes.org.my/article.php?aid=141)")
         st.markdown("- [Healthy Eating Guide](https://www.moh.gov.my/index.php/pages/view/227)")
-        st.markdown("- [Exercise Recommendations](https://www.moh.gov.my/index.php/pages.view/229)")
+        st.markdown("- [Exercise Recommendations](https://www.moh.gov.my/index.php/pages/view/229)")
