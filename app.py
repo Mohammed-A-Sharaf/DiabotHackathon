@@ -61,22 +61,9 @@ st.set_page_config(
 with st.sidebar:
     st.title("HealthGuard AI")
     st.markdown("---")
-    page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant", "Health Education"])
+    page = st.radio("Navigation", ["Health Analysis", "AI Health Assistant"])
     
-    # Add Malaysian-specific resources
-    st.markdown("---")
-    st.markdown("### Malaysian Resources")
-    st.markdown("- [Ministry of Health Malaysia](https://www.moh.gov.my/)")
-    st.markdown("- [National Diabetes Institute (NADI)](http://www.nadi.org.my/)")
-    st.markdown("- [Malaysian Diabetes Association](http://www.diabetes.org.my/)")
-    
-    # Add emergency contact information for Malaysia
-    st.markdown("---")
-    st.markdown("### Emergency Contacts (Malaysia)")
-    st.markdown("**If you're experiencing a medical emergency, call 999 immediately.**")
-    st.markdown("- Health Advisory: 03-8881 0200")
-    st.markdown("- Poison Control: 04-657 0099")
-    st.markdown("- Mental Health: 03-7956 8145")
+    # Removed the Quick Stats section as requested
 
 # -----------------------------
 # Normalization Helper
@@ -115,16 +102,16 @@ age_categories = {
     13: "80+ years"
 }
 
-# Income category mapping (Malaysian Ringgit)
+# Income category mapping
 income_categories = {
-    1: "Less than RM 1,000",
-    2: "RM 1,000 to RM 2,000",
-    3: "RM 2,000 to RM 3,000",
-    4: "RM 3,000 to RM 4,000",
-    5: "RM 4,000 to RM 5,000",
-    6: "RM 5,000 to RM 6,000",
-    7: "RM 6,000 to RM 7,000",
-    8: "RM 7,000 or more"
+    1: "Less than $10,000",
+    2: "$10,000 to $15,000",
+    3: "$15,000 to $20,000",
+    4: "$20,000 to $25,000",
+    5: "$25-35,000",
+    6: "$35-50,000",
+    7: "$50-75,000",
+    8: "$75,000 or more"
 }
 
 # -----------------------------
@@ -176,7 +163,7 @@ if page == "Health Analysis":
                 "Income Category",
                 options=list(income_categories.keys()),
                 format_func=lambda x: f"{x} - {income_categories[x]}",
-                index=3  # Default to RM 3,000 to RM 4,000
+                index=3  # Default to $20,000 to $25,000
             )
             
         with col3:
@@ -417,7 +404,7 @@ elif page == "AI Health Assistant":
     with col1:
         st.session_state.language = st.selectbox(
             "Select Chat Language",
-            ["English", "Malay", "Chinese", "Tamil"],
+            ["English", "Spanish", "French", "German", "Chinese", "Hindi", "Arabic", "Portuguese", "Russian", "Japanese"],
             index=0
         )
     with col2:
@@ -607,112 +594,3 @@ Please provide a helpful, concise response focused on diabetes prevention and ma
     if prompt:
         process_user_input(prompt)
         st.rerun()
-
-# -----------------------------
-# Health Education Page
-# -----------------------------
-elif page == "Health Education":
-    st.markdown("# Health Education")
-    st.markdown("Learn about diabetes prevention and management in Malaysia")
-    
-    # Create tabs for different educational topics
-    tab1, tab2, tab3, tab4 = st.tabs(["Diabetes Basics", "Malaysian Context", "Nutrition Guide", "Exercise & Lifestyle"])
-    
-    with tab1:
-        st.markdown("## Understanding Diabetes")
-        st.markdown("""
-        ### What is Diabetes?
-        Diabetes is a chronic condition that occurs when the pancreas doesn't produce enough insulin or when the body cannot effectively use the insulin it produces.
-        
-        ### Types of Diabetes
-        - **Type 1 Diabetes**: Usually diagnosed in children and young adults
-        - **Type 2 Diabetes**: Most common form, often related to lifestyle factors
-        - **Gestational Diabetes**: Occurs during pregnancy
-        
-        ### Common Symptoms
-        - Frequent urination
-        - Excessive thirst
-        - Extreme hunger
-        - Unexplained weight loss
-        - Fatigue
-        - Blurred vision
-        """)
-    
-    with tab2:
-        st.markdown("## Diabetes in Malaysia")
-        st.markdown("""
-        ### Statistics
-        - Malaysia has the highest rate of diabetes in Western Pacific
-        - Approximately 3.9 million Malaysians aged 18+ have diabetes
-        - Many cases remain undiagnosed
-        
-        ### Risk Factors for Malaysians
-        - Genetic predisposition
-        - Traditional diets high in carbohydrates and sugar
-        - Sedentary lifestyles
-        - Urbanization and changing food habits
-        
-        ### Government Initiatives
-        - National Strategic Plan for Non-Communicable Diseases
-        - MySejahtera health screening initiatives
-        - Subsidized healthcare for diabetes management
-        """)
-    
-    with tab3:
-        st.markdown("## Malaysian Nutrition Guide")
-        st.markdown("""
-        ### Healthy Local Food Choices
-        - **Nasi**: Choose brown rice over white rice
-        - **Protein**: Opt for grilled fish or chicken instead of fried
-        - **Vegetables**: Increase intake of ulam and local greens
-        - **Fruits**: Enjoy local fruits like papaya, guava, and watermelon
-        
-        ### Foods to Limit
-        - Sweet drinks like teh tarik and sirap
-        - High-sugar kuih and desserts
-        - Fried foods and high-fat dishes
-        - Processed foods and snacks
-        
-        ### Portion Control Tips
-        - Use the "suku-suku separuh" method: 1/4 protein, 1/4 carbs, 1/2 vegetables
-        - Choose smaller portions of rice
-        - Limit sugary beverages
-        """)
-    
-    with tab4:
-        st.markdown("## Exercise & Lifestyle")
-        st.markdown("""
-        ### Recommended Physical Activity
-        - At least 150 minutes of moderate exercise per week
-        - Brisk walking, cycling, or swimming
-        - Traditional activities like silat or tai chi
-        
-        ### Incorporating Activity into Daily Life
-        - Take the stairs instead of elevators
-        - Walk during lunch breaks
-        - Park farther from destinations
-        - Join community exercise groups
-        
-        ### Stress Management
-        - Practice mindfulness and meditation
-        - Get adequate sleep (7-8 hours per night)
-        - Maintain social connections
-        - Seek professional help if needed
-        """)
-    
-    # Additional resources section
-    st.markdown("---")
-    st.markdown("## Additional Resources")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("### Malaysian Health Organizations")
-        st.markdown("- [Ministry of Health Malaysia](https://www.moh.gov.my/)")
-        st.markdown("- [National Diabetes Institute](http://www.nadi.org.my/)")
-        st.markdown("- [Malaysian Diabetes Association](http://www.diabetes.org.my/)")
-    
-    with col2:
-        st.markdown("### Educational Materials")
-        st.markdown("- [Diabetes Malaysia Handbook](http://www.diabetes.org.my/article.php?aid=141)")
-        st.markdown("- [Healthy Eating Guide](https://www.moh.gov.my/index.php/pages/view/227)")
-        st.markdown("- [Exercise Recommendations](https://www.moh.gov.my/index.php/pages/view/229)")
