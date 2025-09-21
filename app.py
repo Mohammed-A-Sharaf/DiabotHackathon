@@ -331,12 +331,12 @@ def get_age_category(age):
         return 1
 
 # Function to predict future risk
-def predict_future_risk(current_features, current_age, months=36):
+def predict_future_risk(current_features, current_age, years=5):
     future_risks = []
     
-    for month in range(0, months + 1, 6):  # Predict every 6 months
+    for year in range(years + 1):
         future_features = current_features.copy()
-        future_age = current_age + (month / 12)
+        future_age = current_age + year
         future_age_category = get_age_category(future_age)
         future_features[18] = future_age_category
         
@@ -475,9 +475,13 @@ if page == "Health Analysis":
     
     X = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
 
-    predict_btn = st.button("Predict Risk", type="primary", use_container_width=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        predict_current = st.button("Predict Current Risk", type="primary", use_container_width=True)
+    with col2:
+        predict_future = st.button("Predict Future Risk (5 Years)", type="secondary", use_container_width=True)
 
-    if predict_btn:
+    if predict_current:
         with torch.no_grad():
             outputs = model(X)
             probabilities = torch.softmax(outputs, dim=1)
@@ -574,45 +578,45 @@ if page == "Health Analysis":
             st.write("• Regular blood glucose monitoring is recommended")
         
         st.warning("**Important Notice:** These insights and recommendations are generated based on the information provided and are not a substitute for professional medical advice. Please consult with your healthcare provider for personalized medical guidance.")
-        
-        # Add the statistical prediction for the next 36 months
+
+    if predict_future:
         with st.spinner("Calculating future risk projections..."):
-            future_risks = predict_future_risk(features, age, months=36)
+            future_risks = predict_future_risk(features, age, years=5)
             
-            months = list(range(0, 37, 6))
-            current_date = pd.Timestamp.now()
-            month_labels = [(current_date + pd.DateOffset(months=i)).strftime("%b %Y") for i in months]
+            years = [f"Year {i}" for i in range(6)]
+            current_year = pd.Timestamp.now().year
+            year_labels = [f"{current_year + i}" for i in range(6)]
             
             risk_data = pd.DataFrame({
-                "Month": months,
-                "Month_Label": month_labels,
+                "Year": years,
+                "Year_Label": year_labels,
                 "Risk": future_risks
             })
             
-            st.subheader("36-Month Diabetes Risk Projection")
+            st.subheader("5-Year Diabetes Risk Projection")
             
             col1, col2 = st.columns([2, 1])
             
             with col1:
-                st.line_chart(risk_data, x="Month_Label", y="Risk")
+                st.line_chart(risk_data, x="Year_Label", y="Risk")
             
             with col2:
-                st.write("**Risk by Period:**")
+                st.write("**Risk by Year:**")
                 for i, risk in enumerate(future_risks):
-                    st.write(f"{month_labels[i]}: {risk:.2%}")
+                    st.write(f"{year_labels[i]}: {risk:.2%}")
             
             st.subheader("Future Risk Analysis")
             
             risk_change = future_risks[-1] - future_risks[0]
             
             if risk_change > 0.1:
-                st.error(f"**Warning:** Your diabetes risk is projected to increase significantly by {month_labels[-1]} (+{risk_change:.2%}). Consider making lifestyle changes now to reduce this risk.")
+                st.error(f"**Warning:** Your diabetes risk is projected to increase significantly by {year_labels[-1]} (+{risk_change:.2%}). Consider making lifestyle changes now to reduce this risk.")
             elif risk_change > 0.05:
-                st.warning(f"**Notice:** Your diabetes risk is projected to increase by {month_labels[-1]} (+{risk_change:.2%}). Small lifestyle changes now can help mitigate this increase.")
+                st.warning(f"**Notice:** Your diabetes risk is projected to increase by {year_labels[-1]} (+{risk_change:.2%}). Small lifestyle changes now can help mitigate this increase.")
             elif abs(risk_change) <= 0.05:
-                st.info(f"**Stable:** Your diabetes risk is projected to remain relatively stable through {month_labels[-1]} ({risk_change:+.2%}).")
+                st.info(f"**Stable:** Your diabetes risk is projected to remain relatively stable through {year_labels[-1]} ({risk_change:+.2%}).")
             else:
-                st.success(f"**Improving:** Your diabetes risk is projected to decrease by {month_labels[-1]} ({risk_change:+.2%}). Keep up your healthy habits!")
+                st.success(f"**Improving:** Your diabetes risk is projected to decrease by {year_labels[-1]} ({risk_change:+.2%}). Keep up your healthy habits!")
             
             st.subheader("Long-Term Recommendations")
             
