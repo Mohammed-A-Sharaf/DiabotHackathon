@@ -289,7 +289,7 @@ st.set_page_config(
 
 # Sidebar navigation
 with st.sidebar:
-    st.image("DIaBot Logo/logo2.png", width=200)
+    st.image("DIaBot Logo/logo2.png", width=150)
     st.markdown("---")
     
     # Initialize page in session state if not exists
@@ -803,6 +803,7 @@ elif page == "AI Health Assistant":
             st.error("Please make sure your AWS credentials are correctly set in Streamlit secrets.")
             return None
     
+    # Initialize session state
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
@@ -816,125 +817,133 @@ elif page == "AI Health Assistant":
         
     if "prefilled_prompt" not in st.session_state:
         st.session_state.prefilled_prompt = ""
+        
+    if "chat_input_key" not in st.session_state:
+        st.session_state.chat_input_key = 0
     
-    col1, col2 = st.columns([3, 1])
+    # Header with language selector
+    col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
-        st.session_state.language = st.selectbox(
-            "Select Chat Language",
-            ["English", "Malay", "Chinese", "Tamil", "Arabic"],
-            index=0
-        )
+        st.markdown("### Chat with Health Assistant")
     with col2:
+        st.session_state.language = st.selectbox(
+            "Language",
+            ["English", "Malay", "Chinese", "Tamil", "Arabic"],
+            index=0,
+            label_visibility="collapsed"
+        )
+    with col3:
         if st.button("Clear Chat", use_container_width=True):
             st.session_state.messages = [
-                {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": "English"}
+                {"role": "assistant", "content": "Hi! I'm your AI health assistant specializing in diabetes care. Have you completed your health analysis yet? I can provide better advice if you share your health information with me.", "language": st.session_state.language}
             ]
             st.session_state.show_quick_actions = True
             st.session_state.prefilled_prompt = ""
+            st.session_state.chat_input_key += 1
             st.rerun()
     
+    # Apply appropriate text direction based on language
     if st.session_state.language == "Arabic":
         st.markdown('<div class="arabic-input">', unsafe_allow_html=True)
     elif st.session_state.language in ["Chinese", "Japanese", "Korean"]:
         st.markdown('<div class="cjk-text">', unsafe_allow_html=True)
     
+    # Health summary if available
     health_data_exists = "health_data" in st.session_state
-    
     if health_data_exists:
-        st.info("### Your Health Summary")
-        health_data = st.session_state.health_data
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write(f"**Age:** {health_data.get('age', 'Not provided')}")
-            st.write(f"**Gender:** {health_data.get('gender', 'Not provided')}")
-            st.write(f"**BMI:** {health_data.get('bmi', 'Not provided')}")
-            st.write(f"**Diabetes Risk:** {health_data.get('risk', 'Not calculated')}")
-        
-        with col2:
-            st.write(f"**Blood Pressure:** {'High' if health_data.get('HighBP') == 'Yes' else 'Normal'}")
-            st.write(f"**Cholesterol:** {'High' if health_data.get('HighChol') == 'Yes' else 'Normal'}")
-            st.write(f"**Activity Level:** {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}")
-            st.write(f"**General Health:** {health_data.get('GenHlth', 'Not provided')}/5")
+        with st.expander("Your Health Summary", expanded=False):
+            health_data = st.session_state.health_data
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write(f"**Age:** {health_data.get('age', 'Not provided')}")
+                st.write(f"**Gender:** {health_data.get('gender', 'Not provided')}")
+                st.write(f"**BMI:** {health_data.get('bmi', 'Not provided')}")
+                st.write(f"**Diabetes Risk:** {health_data.get('risk', 'Not calculated')}")
+            
+            with col2:
+                st.write(f"**Blood Pressure:** {'High' if health_data.get('HighBP') == 'Yes' else 'Normal'}")
+                st.write(f"**Cholesterol:** {'High' if health_data.get('HighChol') == 'Yes' else 'Normal'}")
+                st.write(f"**Activity Level:** {'Active' if health_data.get('PhysActivity') == 'Yes' else 'Inactive'}")
+                st.write(f"**General Health:** {health_data.get('GenHlth', 'Not provided')}/5")
     
+    # Quick action prompts in different languages
     quick_action_prompts = {
         "English": {
             "diet": "Provide specific dietary recommendations for diabetes prevention",
-            "exercise": "Suggest an appropriate exercise routine",
+            "exercise": "Suggest an appropriate exercise routine for diabetes prevention",
             "risk": "What are the main risk factors for diabetes?"
         },
         "Malay": {
             "diet": "Berikan cadangan diet khusus untuk pencegahan diabetes",
-            "exercise": "Cadangkan rutin senaman yang sesuai",
+            "exercise": "Cadangkan rutin senaman yang sesuai untuk pencegahan diabetes",
             "risk": "Apakah faktor risiko utama untuk diabetes?"
         },
         "Chinese": {
             "diet": "提供预防糖尿病的具体饮食建议",
-            "exercise": "建议适当的运动计划",
+            "exercise": "建议预防糖尿病的适当运动计划",
             "risk": "糖尿病的主要风险因素有哪些？"
         },
         "Tamil": {
             "diet": "நீரிழிவு தடுப்புக்கான குறிப்பிட்ட dietary பரிந்துரைகளை வழங்கவும்",
-            "exercise": "பொருத்தமான உடற்பயிற்சி வழிகாட்டுதல்களை பரிந்துரைக்கவும்",
+            "exercise": "நீரிழிவு நோய்த்தடுப்புக்கான ஏற்ற உடற்பயிற்சி வழிகாட்டுதல்களை பரிந்துரைக்கவும்",
             "risk": "நீரிழிவு நோய்க்கான முக்கிய ஆபத்து காரணிகள் என்ன?"
         },
         "Arabic": {
             "diet": "قدم توصيات غذائية محددة للوقاية من مرض السكري",
-            "exercise": "اقترح روتين تمارين مناسب",
+            "exercise": "اقترح روتين تمارين مناسب للوقاية من مرض السكري",
             "risk": "ما هي عوامل الخطر الرئيسية لمرض السكري؟"
         }
     }
     
-    if st.session_state.show_quick_actions and len(st.session_state.messages) == 1:
-        st.markdown("---")
+    # Quick actions section
+    if st.session_state.show_quick_actions and len(st.session_state.messages) <= 2:
         st.markdown("### Quick Actions")
+        st.markdown("Choose a common question or type your own:")
         
-        col1, col2, col3 = st.columns(3)
+        cols = st.columns(3)
+        actions = [
+            ("Get Diet Recommendations", "diet", "Get personalized diet suggestions"),
+            ("Exercise Plan", "exercise", "Get a personalized exercise plan"),
+            ("Risk Explanation", "risk", "Understand diabetes risk factors")
+        ]
         
-        with col1:
-            if st.button("Get Diet Recommendations", help="Get personalized diet suggestions based on your health profile"):
-                prompt = quick_action_prompts[st.session_state.language]["diet"]
-                if health_data_exists:
-                    prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
-                st.session_state.prefilled_prompt = prompt
-                st.session_state.show_quick_actions = False
-                st.rerun()
+        for i, (label, key, help_text) in enumerate(actions):
+            with cols[i]:
+                if st.button(label, help=help_text, use_container_width=True):
+                    prompt = quick_action_prompts[st.session_state.language][key]
+                    if health_data_exists and key != "risk":
+                        if key == "diet":
+                            prompt += f" for a {st.session_state.health_data.get('age')} year old {st.session_state.health_data.get('gender')} with a BMI of {st.session_state.health_data.get('bmi')}"
+                        elif key == "exercise":
+                            activity_level = "active" if st.session_state.health_data.get('PhysActivity') == 'Yes' else "sedentary"
+                            prompt += f" for someone who is currently {activity_level}"
+                    elif health_data_exists and key == "risk":
+                        prompt = f"Explain my diabetes risk of {st.session_state.health_data.get('risk')} and what factors contribute to it"
+                    
+                    st.session_state.prefilled_prompt = prompt
+                    st.session_state.show_quick_actions = False
+                    st.session_state.chat_input_key += 1
+                    st.rerun()
         
-        with col2:
-            if st.button("Exercise Plan", help="Get a personalized exercise plan"):
-                prompt = quick_action_prompts[st.session_state.language]["exercise"]
-                if health_data_exists:
-                    activity_level = "active" if st.session_state.health_data.get('PhysActivity') == 'Yes' else "sedentary"
-                    prompt += f" for someone who is currently {activity_level}"
-                st.session_state.prefilled_prompt = prompt
-                st.session_state.show_quick_actions = False
-                st.rerun()
-        
-        with col3:
-            if st.button("Risk Explanation", help="Understand your diabetes risk factors"):
-                if health_data_exists:
-                    prompt = f"Explain my diabetes risk of {st.session_state.health_data.get('risk')} and what factors contribute to it"
+        st.markdown("---")
+    
+    # Chat messages display
+    chat_container = st.container()
+    with chat_container:
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                if message.get("language") == "Arabic":
+                    st.markdown(f'<div class="rtl-text">{message["content"]}</div>', unsafe_allow_html=True)
+                elif message.get("language") in ["Chinese", "Japanese", "Korean"]:
+                    st.markdown(f'<div class="cjk-text">{message["content"]}</div>', unsafe_allow_html=True)
                 else:
-                    prompt = quick_action_prompts[st.session_state.language]["risk"]
-                st.session_state.prefilled_prompt = prompt
-                st.session_state.show_quick_actions = False
-                st.rerun()
+                    st.markdown(message["content"])
     
-    st.markdown("---")
-    st.markdown("### Chat with Health Assistant")
-    
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            if message.get("language") == "Arabic":
-                st.markdown(f'<div class="rtl-text">{message["content"]}</div>', unsafe_allow_html=True)
-            elif message.get("language") in ["Chinese", "Japanese", "Korean"]:
-                st.markdown(f'<div class="cjk-text">{message["content"]}</div>', unsafe_allow_html=True)
-            else:
-                st.markdown(message["content"])
-    
+    # Close language-specific divs
     if st.session_state.language in ["Arabic", "Chinese", "Japanese", "Korean"]:
         st.markdown('</div>', unsafe_allow_html=True)
     
+    # LLM invocation function
     def invoke_llama(prompt, max_tokens=800, temperature=0.5):
         try:
             bedrock_client = get_bedrock_client()
@@ -971,8 +980,15 @@ elif page == "AI Health Assistant":
         except Exception as e:
             return f"Error: {str(e)}"
     
+    # Process user input function
     def process_user_input(prompt):
+        if not prompt.strip():
+            return
+            
         st.session_state.messages.append({"role": "user", "content": prompt, "language": st.session_state.language})
+        st.session_state.prefilled_prompt = ""
+        st.session_state.show_quick_actions = False
+        st.session_state.chat_input_key += 1
         
         with st.chat_message("user"):
             if st.session_state.language == "Arabic":
@@ -1034,6 +1050,7 @@ Please provide a helpful, concise response focused on diabetes prevention and ma
                 
                 full_response = invoke_llama(full_prompt)
                 
+                # Language validation for non-English responses
                 if st.session_state.language != "English":
                     if st.session_state.language in ["Chinese", "Japanese", "Korean"]:
                         latin_chars = sum(1 for c in full_response if 'a' <= c <= 'z' or 'A' <= c <= 'Z')
@@ -1062,6 +1079,7 @@ Please respond in {st.session_state.language} only.
 """
                             full_response = invoke_llama(retry_prompt)
                 
+                # Display response with appropriate formatting
                 if st.session_state.language == "Arabic":
                     st.markdown(f'<div class="rtl-text">{full_response}</div>', unsafe_allow_html=True)
                 elif st.session_state.language in ["Chinese", "Japanese", "Korean"]:
@@ -1070,27 +1088,43 @@ Please respond in {st.session_state.language} only.
                     st.markdown(full_response)
         
         st.session_state.messages.append({"role": "assistant", "content": full_response, "language": st.session_state.language})
-        st.session_state.show_quick_actions = False
-        st.session_state.prefilled_prompt = ""
     
-    if len(st.session_state.messages) > 1 and st.session_state.messages[-1]["role"] == "user" and st.session_state.messages[-1]["content"] not in [msg["content"] for msg in st.session_state.messages[:-1]]:
-        user_message = st.session_state.messages[-1]["content"]
-        process_user_input(user_message)
-        st.rerun()
+    # Chat input section
+    st.markdown("---")
     
-    chat_placeholder = st.empty()
-    with chat_placeholder:
-        with st.form(key="chat_input_form", clear_on_submit=True):
+    # Use a form for better control over the input
+    with st.form(key="chat_input_form", clear_on_submit=True):
+        input_col, button_col = st.columns([5, 1])
+        
+        with input_col:
             user_input = st.text_input(
-                "Ask about diabetes prevention, nutrition, or exercise...",
+                "Type your message here...",
                 value=st.session_state.prefilled_prompt,
-                key="chat_input_field"
+                key=f"chat_input_{st.session_state.chat_input_key}",
+                label_visibility="collapsed"
             )
-            submit_button = st.form_submit_button("Send")
-            
-            if submit_button and user_input:
-                process_user_input(user_input)
-                st.rerun()
+        
+        with button_col:
+            submit_button = st.form_submit_button("Send", use_container_width=True)
+        
+        if submit_button and user_input:
+            process_user_input(user_input)
+            st.rerun()
+    
+    # Auto-scroll to bottom after new message
+    st.markdown(
+        """
+        <script>
+            window.addEventListener('load', function() {
+                const chatContainer = window.parent.document.querySelector('.main');
+                if (chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            });
+        </script>
+        """,
+        unsafe_allow_html=True
+    )
                 
 # -----------------------------
 # Health Education Page
